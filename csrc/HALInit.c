@@ -1,12 +1,12 @@
 #include "HAL_Config.h"
-
 #include "HALInit.h"
-#include "misc.h"
-#include "stm32f10x_rcc.h"
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_spi.h"
-#include "stm32f10x_tim.h"
-#include "stm32f10x_exti.h"
+
+#include "stm_lib/inc/misc.h"
+#include "stm_lib/inc/stm32f10x_rcc.h"
+#include "stm_lib/inc/stm32f10x_gpio.h"
+#include "stm_lib/inc/stm32f10x_spi.h"
+#include "stm_lib/inc/stm32f10x_tim.h"
+#include "stm_lib/inc/stm32f10x_exti.h"
 #include <stdio.h>
 
 volatile unsigned long globalTimer = 0;

@@ -1,7 +1,7 @@
 #include "HAL_Config.h"
 #include "W5100RelFunctions.h"
-#include "stm32f10x_gpio.h"
-#include "stm32f10x_spi.h"
+#include "stm_lib/inc/stm32f10x_gpio.h"
+#include "stm_lib/inc/stm32f10x_spi.h"
 
 void W5100Initialze(void)
 {
