@@ -1,25 +1,25 @@
 #include "zerynth.h"
 
-//#include "mbedtls/platform.h"
-//#include "mbedtls/net.h"
-//#include "mbedtls/ssl.h"
-//#include "mbedtls/entropy.h"
-//#include "mbedtls/ctr_drbg.h"
-//#include "mbedtls/error.h"
-//#include "mbedtls/certs.h"
-//#include "zerynth_hwcrypto.h"
+#include "mbedtls/platform.h"
+#include "mbedtls/net.h"
+#include "mbedtls/ssl.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/error.h"
+#include "mbedtls/certs.h"
+#include "mbedtls/zerynth_hwcrypto.h"
 
 #include "HAL_Config.h"
 #include "HALInit.h"
-#include "ioLibraryDriver/Ethernet/wizchip_conf.h"
+#include "ioLibrary_Driver/Ethernet/wizchip_conf.h"
 #include "inttypes.h"
 #include "stm_lib/inc/stm32f10x_gpio.h"
 #include "stm_lib/inc/stm32f10x_exti.h"
 #include "W5100RelFunctions.h"
 
-#include "ioLibraryDriver/Internet/DHCP/dhcp.h"
-#include "ioLibraryDriver/Internet/DNS/dhs.h"
-#include "ioLibraryDriver/Ethernet/socket.h"
+#include "ioLibrary_Driver/Internet/DHCP/dhcp.h"
+#include "ioLibrary_Driver/Internet/DNS/dns.h"
+#include "ioLibrary_Driver/Ethernet/socket.h"
 
 #undef printf
 #define printf(...)
@@ -34,10 +34,10 @@
 typedef struct _ethdrv {
     VSemaphore link_lock;
     VSemaphore ssl_lock;
-    ip4_addr_t ip;
-    ip4_addr_t mask;
-    ip4_addr_t gw;
-    ip4_addr_t dns;
+    uint8_t* ip;
+    uint8_t* mask;
+    uint8_t* gw;
+    uint8_t* dns;
     uint8_t status;
     uint8_t error;
     uint8_t connected;
@@ -45,50 +45,15 @@ typedef struct _ethdrv {
 } EthDrv;
 EthDrv drv;
 
-typedef struct _sslsock {
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
-    mbedtls_ssl_context ssl;
-    mbedtls_x509_crt cacert;
-    mbedtls_x509_crt clicert;
-    mbedtls_pk_context pkey;
-    mbedtls_ssl_config conf;
-    mbedtls_net_context fd;
-    int32_t family;
-    int32_t socktype;
-    int32_t proto;
-    uint8_t assigned;
-    uint8_t initialized;
-} SSLSock;
-
-#define MAX_SSLSOCKS 2
-SSLSock sslsocks[MAX_SSLSOCKS];
-#define SSLSOCK_NUM (0xfe + LWIP_SOCKET_OFFSET)
-int mbedtls_full_connect(SSLSock* ssock, const struct sockaddr* name, socklen_t namelen);
-int mbedtls_full_close(SSLSock* ssock);
-#define MBEDTLS_connect(sock, addr, addrlen) mbedtls_full_connect(&sslsocks[(sock)-SSLSOCK_NUM], addr, addrlen)
-#define MBEDTLS_send(sock, buf, len, flags) mbedtls_ssl_write(&sslsocks[(sock)-SSLSOCK_NUM].ssl, buf, len)
-#define MBEDTLS_recv(sock, buf, len, flags) mbedtls_ssl_read(&sslsocks[(sock)-SSLSOCK_NUM].ssl, buf, len)
-#define MBEDTLS_close(sock) mbedtls_full_close(&sslsocks[(sock)-SSLSOCK_NUM])
-
-////////////////
-// DHCP client//
-////////////////
 #define SOCK_DHCP 6
-////////////////
-// DNS client //
-////////////////
 #define SOCK_DNS 7
-////////////
-// Socket//
-///////////
 #define SOCK_NUM 0
 
-#define DATA_BUF_SIZE   2048
-uint8_t gDATABUF[DATA_BUF_SIZE];
+#define ETH_MAX_BUF_SIZE   2048
+uint8_t* gDATABUF[ETH_MAX_BUF_SIZE];
 
 wiz_NetInfo gWIZNETINFO = { .mac = MAC,
-#if not defined(DHCP)
+#ifndef DHCP
 							.ip = IP,
 							.sn = MASK,
 							.gw = GW,
@@ -99,9 +64,9 @@ drv.gw = GW;
 drv.mask = MASK;
 drv.dns = DNS;
 #else
-.dhcp = NETINFO_DHCP};
-/* DHCP client Initialization */
-DHCP_init(SOCK_DHCP, gDATABUF);
+    .dhcp = NETINFO_DHCP};
+    /* DHCP client Initialization */
+    DHCP_init(SOCK_DHCP, gDATABUF);
 #endif
 
 void delay(unsigned int count)
@@ -193,7 +158,7 @@ C_NATIVE(w5100_eth_is_linked)
 C_NATIVE(w5100_net_link_info)
 {
     NATIVE_UNWARN();
-    wiz_NetInfo getWIZNETINFO;
+    wiz_NetInfo* getWIZNETINFO;
     wizchip_getnetinfo(getWIZNETINFO);
     *res = getWIZNETINFO;
     return SOCK_OK;
@@ -202,18 +167,29 @@ C_NATIVE(w5100_net_link_info)
 C_NATIVE(w5100_net_set_link_info)
 {
     C_NATIVE_UNWARN();
-    if (parse_py_args("nnnn", nargs, args,
-            &ip,
-            &mask,
-            &gw,
-            &dns)
-        != 4)
+    
+    uint8_t* ip;
+    uint32_t iplen;
+    uint8_t* mask;
+    uint32_t masklen;
+    uint8_t* gw;
+    uint32_t gwlen;
+    uint8_t* dns;
+    uint32_t dnslen;
+    
+    if (parse_py_args("ssss", nargs, args, 
+            &ip, &iplen,
+            &mask, &masklen,
+            &gw, &gwlen,
+            &dns, &dnslen) 
+            != 4)
         return ERR_TYPE_EXC;
-    drv.ip = ip.ip;
-    drv.gw = gw.ip;
-    drv.dns = dns.ip;
-    drv.mask = mask.ip;
-    if (ip.ip != 0)
+        
+    drv.ip = ip;
+    drv.gw = gw;
+    drv.dns = dns;
+    drv.mask = mask;
+    if (ip != 0)
         drv.has_link_info = 1;
     else
         drv.has_link_info = 0;
@@ -249,7 +225,7 @@ C_NATIVE(w5100_net_socket)
     uint8_t flag;
     int8_t sock;
 
-    if (parse_py_args("III", nargs, args, &protocol, &port, &flag) != 3)
+    if (parse_py_args("BHB", nargs, args, &protocol, &port, &flag) != 3)
       return ERR_TYPE_EXC;
     RELEASE_GIL();
     sock = socket(SOCK_NUM, protocol, port, flag);
@@ -264,9 +240,10 @@ C_NATIVE(w5100_net_connect)
 {
     C_NATIVE_UNWARN();
     int8_t sock;
-    uint8_t addr;
+    uint8_t* addr;
+    uint32_t addrlen;
     uint16_t port;
-    if (parse_py_args("iii", nargs, args, &sock, &addr, &port) != 3)
+    if (parse_py_args("BsH", nargs, args, &sock, &addr, &addrlen, &port) != 3)
       return ERR_TYPE_EXC;
     RELEASE_GIL();
     connect(sock, addr, port);
@@ -279,7 +256,7 @@ C_NATIVE(w5100_net_close)
 {
     C_NATIVE_UNWARN();
     int8_t sock;
-    if (parse_py_args("i", nargs, args, &sock) != 1)
+    if (parse_py_args("B", nargs, args, &sock) != 1)
         return ERR_TYPE_EXC;
     RELEASE_GIL();
     close(sock);
@@ -291,10 +268,10 @@ C_NATIVE(w5100_net_close)
 C_NATIVE(w5100_net_send)
 {
     C_NATIVE_UNWARN();
-    uint8_t buf;
+    uint8_t* buf;
     uint16_t len;
     uint8_t sock;
-    if (parse_py_args("is", nargs, args, &sock, &buf, &len) != 2)
+    if (parse_py_args("Bs", nargs, args, &sock, &buf, &len) != 2)
         return ERR_TYPE_EXC;
     RELEASE_GIL();
     send(sock, buf, len);
@@ -306,12 +283,12 @@ C_NATIVE(w5100_net_send)
 C_NATIVE(w5100_net_send_all)
 {
     C_NATIVE_UNWARN();
-    uint8_t buf;
+    uint8_t* buf;
     uint16_t len;
     uint8_t sock;
     int32_t wrt;
     int32_t w;
-    if (parse_py_args("is", nargs, args, &sock, &buf, &len) != 2)
+    if (parse_py_args("Bs", nargs, args, &sock, &buf, &len) != 2)
         return ERR_TYPE_EXC;
     RELEASE_GIL();
     wrt = 0;
@@ -329,12 +306,13 @@ C_NATIVE(w5100_net_send_all)
 C_NATIVE(w5100_net_sendto)
 {
     C_NATIVE_UNWARN();
-    uint8_t buf;
+    uint8_t* buf;
     uint16_t len;
     uint8_t sock;
-    uint8_t addr;
+    uint8_t* addr;
+    uint8_t* addrlen;
     uint16_t port;
-    if (parse_py_args("is", nargs, args, &sock, &buf, &len, &addr, &port) != 4)
+    if (parse_py_args("BssH", nargs, args, &sock, &buf, &len, &addr, &addrlen, &port) != 4)
         return ERR_TYPE_EXC;
     RELEASE_GIL();
     sendto(sock, buf, len, addr, port);
@@ -351,12 +329,11 @@ C_NATIVE(w5100_net_recv_into)
     uint8_t sock;
     int32_t ofs;
 
-    if (parse_py_args("is", nargs, args, &sock, &buf, &len, &ofs)!= 3)
+    if (parse_py_args("Bsi", nargs, args, &sock, &buf, &len, &ofs)!= 3)
       return ERR_TYPE_EXC;
 
       buf += ofs;
       len -= ofs;
-      len = (sz < len) ? sz : len;
 
       RELEASE_GIL();
       int rb = 0;
@@ -383,15 +360,15 @@ C_NATIVE(w5100_net_recvfrom_into)
     uint16_t len;
     uint8_t sock;
     int32_t ofs;
-    uint8_t addr;
+    uint8_t* addr;
+    uint16_t addrlen;
     uint16_t port;
 
-    if (parse_py_args("is", nargs, args, &sock, &buf, &len, &addr, &port, &ofs)!= 5)
+    if (parse_py_args("BssHi", nargs, args, &sock, &buf, &len, &addr, &addrlen, &port, &ofs)!= 5)
       return ERR_TYPE_EXC;
 
       buf += ofs;
       len -= ofs;
-      len = (sz < len) ? sz : len;
 
       RELEASE_GIL();
       int r;
@@ -417,11 +394,11 @@ C_NATIVE(w5100_net_setsockopt)
     int32_t optname;
     int32_t optvalue;
 
-    if (parse_py_args("iiii", nargs, args, &sock, &sotype, &optname, &optvalue) != 4)
+    if (parse_py_args("BIii", nargs, args, &sock, &sotype, &optname, &optvalue) != 4)
       return ERR_TYPE_EXC;
 
     RELEASE_GIL();
-    sock = setsockopt(sock, sotype, optname, &optvalue, sizeof(optvalue));
+    sock = setsockopt(sock, sotype, optvalue);
     ACQUIRE_GIL();
 
     if (sock < 0)
@@ -435,7 +412,7 @@ C_NATIVE(w5100_net_listen)
 {
     C_NATIVE_UNWARN();
     uint8_t sock;
-    if (parse_py_args("i", nargs, args, &sock) != 1)
+    if (parse_py_args("B", nargs, args, &sock) != 1)
         return ERR_TYPE_EXC;
     RELEASE_GIL();
     listen(sock);

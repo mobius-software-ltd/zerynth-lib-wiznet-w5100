@@ -83,7 +83,7 @@ enum
 /*
  * @brief DHCP client initialization (outside of the main loop)
  * @param s   - socket number
- * @param buf - buffer for procssing DHCP message
+ * @param buf - buffer for processing DHCP message
  */
 void DHCP_init(uint8_t s, uint8_t * buf);
 
