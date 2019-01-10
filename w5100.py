@@ -91,14 +91,10 @@ def listen(sock):
 def connect(sock, addr, port):
     pass
 
-@native_c("w5100_net_select",[])
-def select(rlist,wist,xlist,timeout):
-    pass
-
-@native_c("esp32_net_bind",["csrc/*"])
+@native_c("w5100_net_bind",["csrc/*"])
 def bind(sock,addr):
     pass
 
-@native_c("esp32_net_accept",["csrc/*"])
+@native_c("w5100_net_accept",["csrc/*"])
 def accept(sock):
     pass
