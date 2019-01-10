@@ -204,9 +204,9 @@ extern "C" {
  * - \ref MR_IND         	: Indirect Bus Interface mode
  */
 #if _WIZCHIP_IO_MODE_ == _WIZCHIP_IO_MODE_BUS_INDIR_
-   #define MR					(_WIZCHIP_IO_BASE_ + (0x0000))  // Mode
+   #define MR   (_WIZCHIP_IO_BASE_ + (0x0000))  // Mode
 #else
-   #define MR					(_W5100_IO_BASE_ + (0x0000))  // Mode
+   #define MR   (_W5100_IO_BASE_ + (0x0000))  // Mode
 #endif
 
 /**
@@ -214,28 +214,28 @@ extern "C" {
  * @brief Gateway IP Register address(R/W)
  * @details \ref GAR configures the default gateway address.
  */
-#define GAR     			(_W5100_IO_BASE_ + (0x0001))  // GW Address
+#define GAR   (_W5100_IO_BASE_ + (0x0001))  // GW Address
 
 /**
  * @ingroup Common_register_group_W5100
  * @brief Subnet mask Register address(R/W)
  * @details \ref SUBR configures the subnet mask address.
  */
-#define SUBR    			(_W5100_IO_BASE_ + (0x0005)) // SN Mask Address
+#define SUBR    (_W5100_IO_BASE_ + (0x0005)) // SN Mask Address
 
 /**
  * @ingroup Common_register_group_W5100
  * @brief Source MAC Register address(R/W)
  * @details \ref SHAR configures the source hardware address.
  */
-#define SHAR    			(_W5100_IO_BASE_ + (0x0009)) // Source Hardware Address
+#define SHAR    (_W5100_IO_BASE_ + (0x0009)) // Source Hardware Address
 
 /**
  * @ingroup Common_register_group_W5100
  * @brief Source IP Register address(R/W)
  * @details \ref SIPR configures the source IP address.
  */
-#define SIPR    			(_W5100_IO_BASE_ + (0x000F)) // Source IP Address
+#define SIPR    (_W5100_IO_BASE_ + (0x000F)) // Source IP Address
 
 // Reserved					(_W5100_IO_BASE_ + (0x0013))
 // Reserved					(_W5100_IO_BASE_ + (0x0014))
@@ -258,7 +258,7 @@ extern "C" {
  * - \ref IR_SOCK(1)  : SOCKET 1 Interrupt
  * - \ref IR_SOCK(0)  : SOCKET 0 Interrupt
  */
-#define IR					(_W5100_IO_BASE_ + (0x0015)) // Interrupt
+#define IR   (_W5100_IO_BASE_ + (0x0015)) // Interrupt
 
 /**
  * @ingroup Common_register_group_W5100
@@ -266,7 +266,7 @@ extern "C" {
  * @details Each bit of \ref _IMR_ corresponds to each bit of \ref IR.
  * When a bit of \ref _IMR_ is and the corresponding bit of \ref IR is set, Interrupt will be issued.
  */
-#define _IMR_    			(_W5100_IO_BASE_ + (0x0016)) // Socket Interrupt Mask
+#define _IMR_    (_W5100_IO_BASE_ + (0x0016)) // Socket Interrupt Mask
 
 /**
  * @ingroup Common_register_group_W5100

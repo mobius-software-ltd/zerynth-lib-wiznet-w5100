@@ -28,7 +28,6 @@
 #define STATUS_LINKING 1
 #define STATUS_UNLINKING 2
 #define STATUS_STOPPING 3
-#define STATUS_APLINKING 4
 #define ERROR_CANT_CONNECT 1
 
 typedef struct _ethdrv {
@@ -45,12 +44,13 @@ typedef struct _ethdrv {
 } EthDrv;
 EthDrv drv;
 
-#define SOCK_DHCP 6
-#define SOCK_DNS 7
-#define SOCK_NUM 0
+#define SOCK_DHCP   6
+#define SOCK_DNS    7
+#define SOCK_NUM    0
 
 #define ETH_MAX_BUF_SIZE   2048
-uint8_t* gDATABUF[ETH_MAX_BUF_SIZE];
+uint8_t DHCP_BUF[ETH_MAX_BUF_SIZE];
+uint8_t DNS_BUF[ETH_MAX_BUF_SIZE];
 
 wiz_NetInfo gWIZNETINFO = { .mac = MAC,
 #ifndef DHCP
@@ -65,8 +65,10 @@ drv.mask = MASK;
 drv.dns = DNS;
 #else
     .dhcp = NETINFO_DHCP};
+    // set MAC address before using DHCP
+    setSHAR(MAC);
     /* DHCP client Initialization */
-    DHCP_init(SOCK_DHCP, gDATABUF);
+    DHCP_init(SOCK_DHCP,DHCP_BUF);
 #endif
 
 void delay(unsigned int count)
@@ -86,8 +88,8 @@ C_NATIVE(_w5100_init)
     gpioInitialize();
     timerInitialize();
     /* SPI method callback registration */
-	  reg_wizchip_spi_cbfunc(spiReadByte, spiWriteByte);
-	  /* CS function register */
+	reg_wizchip_spi_cbfunc(spiReadByte, spiWriteByte);
+	/* CS function register */
     reg_wizchip_cs_cbfunc(csEnable,csDisable);
     spiInitailize();
     resetAssert();
@@ -206,7 +208,7 @@ C_NATIVE(w5100_net_resolve)
         return ERR_TYPE_EXC;
     uint8_t * ip_from_dns;
     /* DNS client Initialization */
-    DNS_init(SOCK_DNS, gDATABUF);
+    DNS_init(SOCK_DNS, DNS_BUF);
     /* DNS client  Send DNS query and receive DNS response
       @param dns_ip        : DNS server ip
       @param name          : Domain name to be queryed
