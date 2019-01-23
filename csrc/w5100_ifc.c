@@ -1,146 +1,65 @@
+
 #include "zerynth.h"
 
-#include "mbedtls/platform.h"
-#include "mbedtls/net.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/error.h"
-#include "mbedtls/certs.h"
-#include "mbedtls/zerynth_hwcrypto.h"
-
-#include "HAL_Config.h"
-#include "HALInit.h"
-#include "ioLibrary_Driver/Ethernet/wizchip_conf.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include "inttypes.h"
-#include "stm_lib/inc/stm32f10x_gpio.h"
-#include "stm_lib/inc/stm32f10x_exti.h"
-#include "W5100RelFunctions.h"
 
-#include "ioLibrary_Driver/Internet/DHCP/dhcp.h"
-#include "ioLibrary_Driver/Internet/DNS/dns.h"
-#include "ioLibrary_Driver/Ethernet/socket.h"
+#include "lib/Ethernet/Ethernet.h"
+//#include "lib/Ethernet/utility/w5100.h"
+//#include "lib/Ethernet/Dhcp.h"
 
-#undef printf
-#define printf(...)
+SPISettings * spiSettings;
+W5100Class * w5100Class;
+SPIClass * spiClass;
+spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
+DhcpClass * dhcpClass;
 
-#define STATUS_IDLE 0
-#define STATUS_LINKING 1
-#define STATUS_UNLINKING 2
-#define STATUS_STOPPING 3
-#define ERROR_CANT_CONNECT 1
+#define SPI_ETHERNET_SETTINGS spiSettings
 
-typedef struct _ethdrv {
-    VSemaphore link_lock;
-    VSemaphore ssl_lock;
-    uint8_t* ip;
-    uint8_t* mask;
-    uint8_t* gw;
-    uint8_t* dns;
-    uint8_t status;
-    uint8_t error;
-    uint8_t connected;
-    uint8_t has_link_info;
-} EthDrv;
-EthDrv drv;
+struct EthernetClass *ethernetClass;
+uint8_t *mac;
+unsigned long timeout;
+unsigned long responseTimeout;
+struct IPAddress * dnsIP;
 
-#define SOCK_DHCP   6
-#define SOCK_DNS    7
-#define SOCK_NUM    0
+#define SOCK_NUM 0
+#define SOCK_OK  1
 
-#define ETH_MAX_BUF_SIZE   2048
-uint8_t DHCP_BUF[ETH_MAX_BUF_SIZE];
-uint8_t DNS_BUF[ETH_MAX_BUF_SIZE];
-
-wiz_NetInfo gWIZNETINFO = { .mac = MAC,
-#ifndef DHCP
-							.ip = IP,
-							.sn = MASK,
-							.gw = GW,
-							.dns = DNS,
-              .dhcp = NETINFO_STATIC};
-drv.ip = IP;
-drv.gw = GW;
-drv.mask = MASK;
-drv.dns = DNS;
-#else
-    .dhcp = NETINFO_DHCP};
-    // set MAC address before using DHCP
-    setSHAR(MAC);
-    /* DHCP client Initialization */
-    DHCP_init(SOCK_DHCP,DHCP_BUF);
-#endif
-
-void delay(unsigned int count)
+typedef struct wiz_NetInfo_t
 {
-	int temp;
-	temp = count + TIM2_gettimer();
-	while(temp > TIM2_gettimer()){}
-}
+   uint8_t mac[6];  ///< Source Mac Address
+   uint8_t ip[4];   ///< Source IP Address
+   uint8_t sn[4];   ///< Subnet Mask
+   uint8_t gw[4];   ///< Gateway IP Address
+   uint8_t dns[4];  ///< DNS server IP Address
+} wiz_NetInfo;
+struct wiz_NetInfo* getWIZNETINFO;
 
 C_NATIVE(_w5100_init)
 {
     NATIVE_UNWARN();
-
-    memset(&drv, 0, sizeof(EthDrv));
-    drv.ssl_lock = vosSemCreate(1);
-    drv.link_lock = vosSemCreate(0);
-    gpioInitialize();
-    timerInitialize();
-    /* SPI method callback registration */
-	reg_wizchip_spi_cbfunc(spiReadByte, spiWriteByte);
-	/* CS function register */
-    reg_wizchip_cs_cbfunc(csEnable,csDisable);
-    spiInitailize();
-    resetAssert();
-	  delay(10);
-	  resetDeassert();
-	  delay(10);
-    W5100Initialze();
-    return SOCK_OK;
+    spiSettingsConstructor(spiSettings);
+    spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
+    int ret = begin(ethernetClass, mac, timeout, responseTimeout);
+    return ret;
 }
+
 
 C_NATIVE(w5100_eth_link)
 {
     NATIVE_UNWARN();
-    *res = MAKE_NONE();
-    RELEASE_GIL();
-    drv.status = STATUS_LINKING;
-    printf("HAS LINK INFO %i\n",drv.has_link_info);
-
-    if (!drv.has_link_info)
-    {
-       DHCP_run();
-       getIPfromDHCP(gWIZNETINFO.ip);
-       getGWfromDHCP(gWIZNETINFO.gw);
-       getSNfromDHCP(gWIZNETINFO.sn);
-       getDNSfromDHCP(gWIZNETINFO.dns);
-       drv.ip = gWIZNETINFO.ip;
-       drv.gw = gWIZNETINFO.gw;
-       drv.mask = gWIZNETINFO.sn;
-       drv.dns = gWIZNETINFO.dns;
-    }
-    ctlnetwork(CN_SET_NETINFO, (void*) &gWIZNETINFO);
-    vosSemWait(drv.link_lock);
-    drv.status = STATUS_IDLE;
-    ACQUIRE_GIL();
-
-    if (drv.error) {
-        drv.error = 0;
-        printf("**** %x\n", esp_err);
-        return ERR_IOERROR_EXC;
-    }
+    beginIP(ethernetClass, mac, dnsIP);
     return SOCK_OK;
 }
 
 C_NATIVE(w5100_eth_unlink)
 {
     NATIVE_UNWARN();
-    *res = MAKE_NONE();
     RELEASE_GIL();
-    drv.status = STATUS_UNLINKING;
-    disconnect(SOCK_NUM);
-    vosSemWait(drv.link_lock);
+    socketDisconnect(ethernetClass, SOCK_NUM);
     ACQUIRE_GIL();
     return SOCK_OK;
 }
@@ -148,20 +67,22 @@ C_NATIVE(w5100_eth_unlink)
 C_NATIVE(w5100_eth_is_linked)
 {
     NATIVE_UNWARN();
-    if (!drv.connected) {
-        *res = PBOOL_FALSE();
+    EthernetLinkStatus status = linkStatus(ethernetClass);
+    if (status == LinkON){
+      *res = PBOOL_TRUE();
     }
-    else {
-        *res = PBOOL_TRUE();
-    }
+    *res = PBOOL_FALSE();
     return SOCK_OK;
 }
 
 C_NATIVE(w5100_net_link_info)
 {
     NATIVE_UNWARN();
-    wiz_NetInfo* getWIZNETINFO;
-    wizchip_getnetinfo(getWIZNETINFO);
+    w5100ClassGetMACAddress(w5100Class, getWIZNETINFO->mac);
+    w5100ClassGetIPAddress(w5100Class, getWIZNETINFO->ip);
+    w5100ClassGetSubnetMask(w5100Class, getWIZNETINFO->sn);
+    w5100ClassGetGatewayIp(w5100Class, getWIZNETINFO->gw);
+
     *res = getWIZNETINFO;
     return SOCK_OK;
 }
@@ -169,7 +90,7 @@ C_NATIVE(w5100_net_link_info)
 C_NATIVE(w5100_net_set_link_info)
 {
     C_NATIVE_UNWARN();
-    
+
     uint8_t* ip;
     uint32_t iplen;
     uint8_t* mask;
@@ -178,27 +99,24 @@ C_NATIVE(w5100_net_set_link_info)
     uint32_t gwlen;
     uint8_t* dns;
     uint32_t dnslen;
-    
-    if (parse_py_args("ssss", nargs, args, 
+
+    if (parse_py_args("ssss", nargs, args,
             &ip, &iplen,
             &mask, &masklen,
             &gw, &gwlen,
-            &dns, &dnslen) 
+            &dns, &dnslen)
             != 4)
         return ERR_TYPE_EXC;
-        
-    drv.ip = ip;
-    drv.gw = gw;
-    drv.dns = dns;
-    drv.mask = mask;
-    if (ip != 0)
-        drv.has_link_info = 1;
-    else
-        drv.has_link_info = 0;
+
+    w5100ClassSetMACAddress(w5100Class, getWIZNETINFO->mac);
+    w5100ClassSetIPAddress(w5100Class, getWIZNETINFO->ip);
+    w5100ClassSetSubnetMask(w5100Class, getWIZNETINFO->sn);
+    w5100ClassSetGatewayIp(w5100Class, getWIZNETINFO->gw);
+
     *res = MAKE_NONE();
     return SOCK_OK;
 }
-
+/*
 C_NATIVE(w5100_net_resolve)
 {
     C_NATIVE_UNWARN();
@@ -207,14 +125,8 @@ C_NATIVE(w5100_net_resolve)
     if (parse_py_args("s", nargs, args, &url, &len) != 1)
         return ERR_TYPE_EXC;
     uint8_t * ip_from_dns;
-    /* DNS client Initialization */
     DNS_init(SOCK_DNS, DNS_BUF);
-    /* DNS client  Send DNS query and receive DNS response
-      @param dns_ip        : DNS server ip
-      @param name          : Domain name to be queryed
-      @param ip_from_dns   : IP address from DNS server
-    */
-    DNS_run(drv.dns, url, ip_from_dns);
+    DNS_run(gWIZNETINFO.dns, url, ip_from_dns);
     *res = ip_from_dns;
     return SOCK_OK;
 }
@@ -436,3 +348,4 @@ C_NATIVE(w5100_net_accept)
   *res = MAKE_NONE();
   return SOCK_OK;
 }
+*/
