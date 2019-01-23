@@ -12,6 +12,9 @@
 #define MAX_SOCK_NUM 8
 #endif
 
+SPISettings * spiSettings;
+#define SPI_ETHERNET_SETTINGS spiSettings
+
 typedef int EthernetLinkStatus;
 enum {
 	Unknown,
@@ -27,15 +30,15 @@ enum {
 
 typedef struct EthernetUDP EthernetUDP;
 struct EthernetUDP {
-  uint16_t _port; 
-  struct IPAddress _remoteIP; 
-  uint16_t _remotePort; 
+  uint16_t _port;
+  struct IPAddress _remoteIP;
+  uint16_t _remotePort;
   uint16_t _offset;
   uint8_t sockindex;
-  uint16_t _remaining; 
-  uint8_t (*udpClientBegin)             (EthernetUDP *, uint16_t); 
-  uint8_t (*udpClientBeginMulticast)    (EthernetUDP *, struct IPAddress *, uint16_t);  
-  void    (*udpClientStop)              (EthernetUDP *);  
+  uint16_t _remaining;
+  uint8_t (*udpClientBegin)             (EthernetUDP *, uint16_t);
+  uint8_t (*udpClientBeginMulticast)    (EthernetUDP *, struct IPAddress *, uint16_t);
+  void    (*udpClientStop)              (EthernetUDP *);
   int    (*udpClientBeginPacketIP)      (EthernetUDP *, struct IPAddress *, uint16_t port);
   int    (*udpClientBeginPacketHost)    (EthernetUDP *, const char *host, uint16_t port);
   int    (*udpClientEndPacket)          (EthernetUDP *);
@@ -101,7 +104,7 @@ void socketPortRand(struct EthernetClass *ethernetClass, uint16_t n);
 
 typedef struct EthernetClient EthernetClient;
 struct EthernetClient {
-  uint8_t sockindex; 
+  uint8_t sockindex;
   uint16_t _timeout;
   int (*ethClientConnectIP) (EthernetClient *, struct IPAddress ip, uint16_t port);
   int (*ethClientConnectHost) (EthernetClient *, const char *host, uint16_t port);

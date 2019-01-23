@@ -1,6 +1,7 @@
 
 #include "zerynth.h"
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,16 +9,14 @@
 #include "inttypes.h"
 
 #include "lib/Ethernet/Ethernet.h"
-//#include "lib/Ethernet/utility/w5100.h"
-//#include "lib/Ethernet/Dhcp.h"
 
-SPISettings * spiSettings;
+//spiSettingsConstructor(spiSettings);
 W5100Class * w5100Class;
 SPIClass * spiClass;
-spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
+//spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
 DhcpClass * dhcpClass;
 
-#define SPI_ETHERNET_SETTINGS spiSettings
+//#define SPI_ETHERNET_SETTINGS spiSettings
 
 struct EthernetClass *ethernetClass;
 uint8_t *mac;
@@ -28,6 +27,8 @@ struct IPAddress * dnsIP;
 #define SOCK_NUM 0
 #define SOCK_OK  1
 
+begin(ethernetClass, mac, timeout, responseTimeout);
+
 typedef struct wiz_NetInfo_t
 {
    uint8_t mac[6];  ///< Source Mac Address
@@ -36,12 +37,16 @@ typedef struct wiz_NetInfo_t
    uint8_t gw[4];   ///< Gateway IP Address
    uint8_t dns[4];  ///< DNS server IP Address
 } wiz_NetInfo;
-struct wiz_NetInfo* getWIZNETINFO;
+wiz_NetInfo* getWIZNETINFO;
 
 C_NATIVE(_w5100_init)
 {
     NATIVE_UNWARN();
-    spiSettingsConstructor(spiSettings);
+    #if defined(_SPI_H_INCLUDED)
+      spiSettingsConstructor(spiSettings);
+    #else
+
+    #endif
     spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
     int ret = begin(ethernetClass, mac, timeout, responseTimeout);
     return ret;
@@ -116,6 +121,7 @@ C_NATIVE(w5100_net_set_link_info)
     *res = MAKE_NONE();
     return SOCK_OK;
 }
+
 /*
 C_NATIVE(w5100_net_resolve)
 {

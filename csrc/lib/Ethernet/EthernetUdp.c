@@ -3,14 +3,6 @@
 #include "utility/w5100.h"
 
 /*
-uint16_t _port; // local port to listen on
-struct IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
-uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
-uint16_t _offset; // offset into the packet being sent
-uint8_t sockindex;
-uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
-*/
-
 W5100Class * w5100Class;
 SPIClass * spiClass;
 struct EthernetClass * ethernetClass;
@@ -18,6 +10,7 @@ struct DNSClient *dnsClient;
 SPISettings * spiSettings;
 spiSettingsConstructor(spiSettings);
 #define SPI_ETHERNET_SETTINGS spiSettings
+*/
 
 /* Start EthernetUDP socket, listening at local port PORT */
 uint8_t udpClientBegin(EthernetUDP * ethernetUDP, uint16_t port)

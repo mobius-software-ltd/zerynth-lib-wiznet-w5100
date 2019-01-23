@@ -1,9 +1,4 @@
 #include "SPI.h"
-//#include "variant.h"
-
-//#include "pio_sam3x8e.h"
-//#include "sam3x8e.h"
-//#include "../Ethernet/utility/component_pio.h"
 
 void SPI_0_Init(void) {
 	PIO_Configure(
@@ -40,15 +35,19 @@ void inline init_AlwaysInline(SPISettings * spiSettings, uint32_t clock, BitOrde
 	spiSettings -> config = (dataMode & 3) | SPI_CSR_CSAAT | SPI_CSR_SCBR(div) | SPI_CSR_DLYBCT(1);
 }
 
-spiSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode) {
+int piSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode) {
   if (__builtin_constant_p(clock)) {
     init_AlwaysInline(spiSettings, clock, bitOrder, dataMode);
   } else {
     init_MightInline(spiSettings, clock, bitOrder, dataMode);
   }
+	return 0;
 }
 
-spiSettingsConstructor(SPISettings * spiSettings) { init_AlwaysInline(spiSettings, 14000000, MSBFIRST, SPI_MODE0); }
+int spiSettingsConstructor(SPISettings * spiSettings) {
+	init_AlwaysInline(spiSettings, 14000000, MSBFIRST, SPI_MODE0);
+	return 0;
+}
 
 spiClassConstructor(SPIClass * spiClass, Spi *_spi, uint32_t _id/*, void(*_initCb)(void)*/) {
 	spiClass -> spi = _spi;

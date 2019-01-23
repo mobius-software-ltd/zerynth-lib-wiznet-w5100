@@ -2,6 +2,7 @@
 #include "Dns.h"
 #include "utility/w5100.h"
 
+/*
 W5100Class * w5100Class;
 SPIClass * spiClass;
 struct EthernetClass * ethernetClass;
@@ -9,6 +10,7 @@ struct DNSClient *dnsClient;
 SPISettings * spiSettings;
 spiSettingsConstructor(spiSettings);
 #define SPI_ETHERNET_SETTINGS spiSettings
+*/
 
 int connectHost(struct EthernetClient * ethernetClient, const char * host, uint16_t port)
 {

@@ -1,6 +1,7 @@
 #include "Ethernet.h"
 #include "utility/w5100.h"
 
+/*
 SPISettings * spiSettings;
 spiSettingsConstructor(spiSettings);
 #define SPI_ETHERNET_SETTINGS spiSettings
@@ -8,6 +9,7 @@ spiSettingsConstructor(spiSettings);
 W5100Class * w5100Class;
 SPIClass * spiClass;
 spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
+*/
 
 #if ARDUINO >= 156 && !defined(ARDUINO_ARCH_PIC32)
 /*extern*/ void yield(void);

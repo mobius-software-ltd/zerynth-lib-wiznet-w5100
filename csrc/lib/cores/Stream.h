@@ -1,10 +1,11 @@
 #ifndef Stream_h
 #define Stream_h
-
+#include "inttypes.h"
+#include <stdio.h>
 enum LookaheadMode{
-    SKIP_ALL,       
-    SKIP_NONE,      
-    SKIP_WHITESPACE 
+    SKIP_ALL,
+    SKIP_NONE,
+    SKIP_WHITESPACE
 };
 
 #define NO_IGNORE_CHAR  '\x01' // a char not found in a valid ASCII numeric field
@@ -19,9 +20,9 @@ struct Stream {
 };
 
 struct MultiTarget {
-  const char *str;  
-  size_t len;       
-  size_t index;     
+  const char *str;
+  size_t len;
+  size_t index;
 };
 
 void stream_init(struct Stream *stream);

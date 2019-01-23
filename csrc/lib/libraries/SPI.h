@@ -1,7 +1,12 @@
 #ifndef _SPI_H_INCLUDED
 #define _SPI_H_INCLUDED
-
+#include "inttypes.h"
 #include "variant.h"
+#include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SPI_HAS_TRANSACTION 1
 #define SPI_HAS_EXTENDED_CS_PIN_HANDLING 1
@@ -26,8 +31,8 @@ typedef struct _SPISettings {
 	BitOrder border;
 } SPISettings;
 
-spiSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
-spiSettingsConstructor(SPISettings * spiSettings);
+int spiSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
+int spiSettingsConstructor(SPISettings * spiSettings);
 
 #define F_CPU 84000000L
 #define SPI_CSR_CSAAT (0x1u << 3)

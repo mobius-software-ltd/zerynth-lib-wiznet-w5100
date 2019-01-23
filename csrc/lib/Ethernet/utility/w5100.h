@@ -5,7 +5,6 @@
 #include "../../libraries/SPI.h"
 #include "../../libraries/sam3x8e.h"
 
-// Require Ethernet.h, because we need MAX_SOCK_NUM
 #ifndef ethernet_h_
 exit(EXIT_FAILURE);
 #endif
@@ -102,129 +101,85 @@ inline void w5100ClassGetIPAddress(W5100Class *w5100Class, uint8_t * addr);
 inline void w5100ClassSetRetransmissionTime(W5100Class *w5100Class, uint16_t timeout);
 inline void w5100ClassSetRetransmissionCount(W5100Class *w5100Class, uint8_t retry);
 void w5100ClassExecCmdSn(W5100Class *w5100Class, SOCKET s, SockCMD _cmd);
-
-// W5100 Registers
-// ---------------
 uint16_t writeBuffer(W5100Class *w5100Class, uint16_t addr, const uint8_t *buf, uint16_t len);
 uint8_t writeByte(W5100Class *w5100Class, uint16_t addr, uint8_t data);
 uint16_t readBuffer(W5100Class *w5100Class, uint16_t addr, uint8_t *buf, uint16_t len);
 uint8_t readByte(W5100Class *w5100Class, uint16_t addr);
 W5100Linkstatus getLinkStatus(W5100Class *w5100Class);
-
-// Mode
 void writeMR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readMR(W5100Class *w5100Class);
-// Interrupt
 void writeIR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readIR(W5100Class *w5100Class);
-// Interrupt Mask
 void writeIMR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readIMR(W5100Class *w5100Class);
-// Retry count
 void writeRCR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readRCR(W5100Class *w5100Class);
-// Receive memory size (W5100 only)
 void writeRMSR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readRMSR(W5100Class *w5100Class);
-// Transmit memory size (W5100 only)
 void writeTMSR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readTMSR(W5100Class *w5100Class);
-// Authentication type address in PPPoE mode
 void writePATR(W5100Class *w5100Class, uint8_t _data);
 uint8_t readPATR(W5100Class *w5100Class);
-// PPP LCP Request Timer
 void writePTIMER(W5100Class *w5100Class, uint8_t _data);
 uint8_t readPTIMER(W5100Class *w5100Class);
-// PPP LCP Magic Number
 void writePMAGIC(W5100Class *w5100Class, uint8_t _data);
 uint8_t readPMAGIC(W5100Class *w5100Class);
-// Timeout address
 void writeRTR(W5100Class *w5100Class, uint16_t _data);
 uint16_t readRTR(W5100Class *w5100Class);
-// Unreachable Port address in UDP mode (W5100 only)
 void writeUPORT(W5100Class *w5100Class, uint16_t _data);
 uint16_t readUPORT(W5100Class *w5100Class);
-// Gateway IP address
 void writeGAR(W5100Class *w5100Class, const uint8_t * _buff);
 void readGAR(W5100Class *w5100Class, uint8_t *_buff);
-// Subnet mask address
 void writeSUBR(W5100Class *w5100Class, const uint8_t *_buff);
 void readSUBR(W5100Class *w5100Class, uint8_t *_buff);
-// Source MAC address
-void writeSHAR(W5100Class *w5100Class, const uint8_t *_buff;
+void writeSHAR(W5100Class *w5100Class, const uint8_t *_buff);
 void readSHAR(W5100Class *w5100Class, uint8_t *_buff);
-// Source IP address
 void writeSIPR(W5100Class *w5100Class, const uint8_t *_buff);
 void readSIPR(W5100Class *w5100Class, uint8_t *_buff);
-// Unreachable IP address in UDP mode (W5100 only)
 void writeUIPR(W5100Class *w5100Class, const uint8_t *_buff);
 void readUIPR(W5100Class *w5100Class, uint8_t *_buff);
-
-// W5100 Socket registers
-// ----------------------
 uint16_t getCH_BASE(W5100Class *w5100Class);
 #define CH_SIZE 0x0100
-
 uint8_t readSn(W5100Class *w5100Class, SOCKET s, uint16_t addr);
 uint8_t writeSn(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t data);
 uint16_t readSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len);
 uint16_t writeSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len);
-
-// Mode
 void writeSnMR(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnMR(W5100Class *w5100Class, SOCKET _s);
-// Command
 void writeSnCR(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnCR(W5100Class *w5100Class, SOCKET _s);
-// Interrupt
 void writeSnIR(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnIR(W5100Class *w5100Class, SOCKET _s);
-// Status
 void writeSnSR(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnSR(W5100Class *w5100Class, SOCKET _s);
-// Protocol in IP RAW Mode
 void writeSnPROTO(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnPROTO(W5100Class *w5100Class, SOCKET _s);
-// IP TOS
 void writeSnTOS(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnTOS(W5100Class *w5100Class, SOCKET _s);
-// IP TTL
 void writeSnTTL(W5100Class *w5100Class, SOCKET _s, uint8_t _data);
 uint8_t readSnTTL(W5100Class *w5100Class, SOCKET _s);
-// Source Port
 void writeSnPORT(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnPORT(W5100Class *w5100Class, SOCKET _s);
-// Destination Port
 void writeSnDPORT(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnDPORT(W5100Class *w5100Class, SOCKET _s);
-// Max Segment Size
 void writeSnMSSR(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnMSSR(W5100Class *w5100Class, SOCKET _s);
-// TX Free Size
 void writeSnTX_FSR(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnTX_FSR(W5100Class *w5100Class, SOCKET _s);
-// TX Read Pointer
 void writeSnTX_RD(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnTX_RD(W5100Class *w5100Class, SOCKET _s);
-// TX Write Pointer
 void writeSnTX_WR(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnTX_WR(W5100Class *w5100Class, SOCKET _s);
-// RX Free Size
 void writeSnRX_RSR(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnRX_RSR(W5100Class *w5100Class, SOCKET _s);
-// RX Read Pointer
 void writeSnRX_RD(W5100Class *w5100Class, SOCKET _s, uint16_t _data);
 uint16_t readSnRX_RD(W5100Class *w5100Class, SOCKET _s);
-// RX Write Pointer (supported?)
 void writeSnRX_WR(W5100Class *w5100Class,SOCKET _s, uint16_t _data);
 uint16_t readSnRX_WR(W5100Class *w5100Class,SOCKET _s);
-// Destination Hardw Addr
 uint16_t writeSnDHAR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff);
 uint16_t readSnDHAR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff);
-// Destination IP Addr
 uint16_t writeSnDIPR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff);
 uint16_t readSnDIPR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff);
-
 uint8_t softReset(W5100Class *w5100Class);
 uint8_t isW5100(W5100Class *w5100Class);
 uint8_t getChip(W5100Class *w5100Class);
@@ -330,7 +285,6 @@ PinDescription _g_APinDescription[];
 #define LOW 0x0
 #define digitalPinToPort(P) ( _g_APinDescription[P].pPort )
 #define digitalPinToBitMask(P) ( _g_APinDescription[P].ulPin )
-
 uint8_t g_pinStatus[];
 #define PIN_STATUS_DIGITAL_INPUT_PULLUP  (0x01)
 #define PIN_STATUS_DIGITAL_INPUT         (0x02)
@@ -341,7 +295,6 @@ uint8_t g_pinStatus[];
 #define PIN_STATUS_SERIAL                (0x07)
 #define PIN_STATUS_DW_LOW                (0x10)
 #define PIN_STATUS_DW_HIGH               (0x11)
-
 #define PIO_PULLUP  (1u << 0)
 #define PIO_DEFAULT (0u << 0)
 //#define ADC 0

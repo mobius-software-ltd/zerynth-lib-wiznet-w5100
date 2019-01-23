@@ -1,6 +1,7 @@
 #ifndef Dhcp_h
 #define Dhcp_h
 
+#include "inttypes.h"
 
 #define STATE_DHCP_START	0
 #define	STATE_DHCP_DISCOVER	1
@@ -9,8 +10,8 @@
 #define	STATE_DHCP_REREQUEST	4
 #define	STATE_DHCP_RELEASE	5
 #define DHCP_FLAGSBROADCAST	0x8000
-#define	DHCP_SERVER_PORT	67	
-#define DHCP_CLIENT_PORT	68	
+#define	DHCP_SERVER_PORT	67
+#define DHCP_CLIENT_PORT	68
 #define DHCP_BOOTREQUEST	1
 #define DHCP_BOOTREPLY		2
 #define	DHCP_DISCOVER		1

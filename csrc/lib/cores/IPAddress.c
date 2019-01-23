@@ -1,4 +1,3 @@
-//#include <Arduino.h>
 #include <IPAddress.h>
 
 struct IPAddress INADDR_NONE = {0,0,0,0}
