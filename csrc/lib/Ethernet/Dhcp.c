@@ -1,3 +1,4 @@
+//#include "Ethernet.h"
 #include "Dhcp.h"
 
 int beginWithDHCP(struct DhcpClass *dhcpClass, uint8_t *mac, unsigned long timeout, unsigned long responseTimeout)
@@ -33,8 +34,8 @@ int request_DHCP_lease(struct DhcpClass *dhcpClass)
 	dhcpClass->_dhcpInitialTransactionId = dhcpClass->_dhcpTransactionId;
 
 
-	dhcpClass->_dhcpUdpSocket.stop(&dhcpClass->_dhcpUdpSocket);
-	if (dhcpClass->_dhcpUdpSocket.begin(&dhcpClass->_dhcpUdpSocket, DHCP_CLIENT_PORT) == 0) {
+	dhcpClass->_dhcpUdpSocket.udpClientStop(&dhcpClass->_dhcpUdpSocket);
+	if (dhcpClass->_dhcpUdpSocket.udpClientBegin(&dhcpClass->_dhcpUdpSocket, DHCP_CLIENT_PORT) == 0) {
 		// Couldn't get a socket
 		return 0;
 	}
@@ -100,7 +101,7 @@ int request_DHCP_lease(struct DhcpClass *dhcpClass)
 	}
 
 	// We're done with the socket now
-	dhcpClass->_dhcpUdpSocket.stop(&dhcpClass->_dhcpUdpSocket);
+	dhcpClass->_dhcpUdpSocket.udpClientStop(&dhcpClass->_dhcpUdpSocket);
 	dhcpClass->_dhcpTransactionId++;
 
 	dhcpClass->_lastCheckLeaseMillis = millis();
@@ -111,9 +112,9 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 {
 	uint8_t buffer[32];
 	memset(buffer, 0, 32);
-	struct IPAddress dest_addr = {255, 255, 255, 255}; // Broadcast address
+	struct IPAddress * dest_addr = {255, 255, 255, 255}; // Broadcast address
 
-	if (dhcpClass->_dhcpUdpSocket.beginPacketIP(&dhcpClass->_dhcpUdpSocket, dest_addr, DHCP_SERVER_PORT) == -1) {
+	if (dhcpClass->_dhcpUdpSocket.udpClientBeginPacketIP(&dhcpClass->_dhcpUdpSocket, dest_addr, DHCP_SERVER_PORT) == -1) {
 		//Serial.printf("DHCP transmit error\n");
 		// FIXME Need to return errors
 		return;
@@ -142,14 +143,14 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 	// giaddr: already zeroed
 
 	//put data in W5100 transmit buffer
-	dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 28);
+	dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 28);
 
 	memset(buffer, 0, 32); // clear local buffer
 
 	memcpy(buffer, dhcpClass->_dhcpMacAddr, 6); // chaddr
 
 	//put data in W5100 transmit buffer
-	dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 16);
+	dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 16);
 
 	memset(buffer, 0, 32); // clear local buffer
 
@@ -157,7 +158,7 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 	// put in W5100 transmit buffer x 6 (192 bytes)
 
 	for(int i = 0; i < 6; i++) {
-		dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 32);
+		dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 32);
 	}
 
 	// OPT - Magic Cookie
@@ -187,7 +188,7 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 	printByte((char*)&(buffer[28]), dhcpClass->_dhcpMacAddr[5]);
 
 	//put data in W5100 transmit buffer
-	dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 30);
+	dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 30);
 
 	if (messageType == DHCP_REQUEST) {
 		buffer[0] = dhcpRequestedIPaddr;
@@ -205,7 +206,7 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 		buffer[11] = dhcpClass->_dhcpDhcpServerIp[3];
 
 		//put data in W5100 transmit buffer
-		dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 12);
+		dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 12);
 	}
 
 	buffer[0] = dhcpParamRequest;
@@ -219,9 +220,9 @@ void send_DHCP_MESSAGE(struct DhcpClass *dhcpClass, uint8_t messageType, uint16_
 	buffer[8] = endOption;
 
 	//put data in W5100 transmit buffer
-	dhcpClass->_dhcpUdpSocket.writeBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 9);
+	dhcpClass->_dhcpUdpSocket.udpClientWriteBuffer(&dhcpClass->_dhcpUdpSocket, buffer, 9);
 
-	dhcpClass->_dhcpUdpSocket.endPacket(&dhcpClass->_dhcpUdpSocket);
+	dhcpClass->_dhcpUdpSocket.udpClientEndPacket(&dhcpClass->_dhcpUdpSocket);
 }
 
 uint8_t parseDHCPResponse(struct DhcpClass *dhcpClass, unsigned long responseTimeout, uint32_t transactionId)
@@ -231,7 +232,7 @@ uint8_t parseDHCPResponse(struct DhcpClass *dhcpClass, unsigned long responseTim
 
 	unsigned long startTime = millis();
 
-	while (dhcpClass->_dhcpUdpSocket.parsePacket(&dhcpClass->_dhcpUdpSocket) <= 0) {
+	while (dhcpClass->_dhcpUdpSocket.udpClientParsePacket(&dhcpClass->_dhcpUdpSocket) <= 0) {
 		if ((millis() - startTime) > responseTimeout) {
 			return 255;
 		}
@@ -239,25 +240,25 @@ uint8_t parseDHCPResponse(struct DhcpClass *dhcpClass, unsigned long responseTim
 	}
 	// start reading in the packet
 	RIP_MSG_FIXED fixedMsg;
-	dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket,(uint8_t*)&fixedMsg, sizeof(RIP_MSG_FIXED));
+	dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket,(uint8_t*)&fixedMsg, sizeof(RIP_MSG_FIXED));
 
-	if (fixedMsg.op == DHCP_BOOTREPLY && dhcpClass->_dhcpUdpSocket.remotePort(&dhcpClass->_dhcpUdpSocket) == DHCP_SERVER_PORT) {
+	if (fixedMsg.op == DHCP_BOOTREPLY && dhcpClass->_dhcpUdpSocket.udpClientRemotePort(&dhcpClass->_dhcpUdpSocket) == DHCP_SERVER_PORT) {
 		transactionId = ntohl(fixedMsg.xid);
 		if (memcmp(fixedMsg.chaddr, dhcpClass->_dhcpMacAddr, 6) != 0 ||
 		  (transactionId < dhcpClass->_dhcpInitialTransactionId) ||
 		  (transactionId > dhcpClass->_dhcpTransactionId)) {
 			// Need to read the rest of the packet here regardless
-			dhcpClass->_dhcpUdpSocket.flush(&dhcpClass->_dhcpUdpSocket); // FIXME
+			dhcpClass->_dhcpUdpSocket.udpClientFlush(&dhcpClass->_dhcpUdpSocket); // FIXME
 			return 0;
 		}
 
 		memcpy(dhcpClass->_dhcpLocalIp, fixedMsg.yiaddr, 4);
 
 		// Skip to the option part
-		dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket,(uint8_t *)NULL, 240 - (int)sizeof(RIP_MSG_FIXED));
+		dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket,(uint8_t *)NULL, 240 - (int)sizeof(RIP_MSG_FIXED));
 
-		while (dhcpClass->_dhcpUdpSocket.available(&dhcpClass->_dhcpUdpSocket) > 0) {
-			switch (dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket)) {
+		while (dhcpClass->_dhcpUdpSocket.udpClientAvailable(&dhcpClass->_dhcpUdpSocket) > 0) {
+			switch (dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket)) {
 			case endOption :
 				break;
 
@@ -265,67 +266,67 @@ uint8_t parseDHCPResponse(struct DhcpClass *dhcpClass, unsigned long responseTim
 				break;
 
 			case dhcpMessageType :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				type = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				type = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
 				break;
 
 			case subnetMaskEnum :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpSubnetMask, 4);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpSubnetMask, 4);
 				break;
 
 			case routersOnSubnet :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpGatewayIp, 4);
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len - 4);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpGatewayIp, 4);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len - 4);
 				break;
 
 			case dns :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpDnsServerIp, 4);
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len - 4);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpDnsServerIp, 4);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len - 4);
 				break;
 
 			case dhcpServerIdentifier :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
 				if ( dhcpClass->_dhcpDhcpServerIp == (uint32_t)0 ||
-				  dhcpClass->_dhcpDhcpServerIp == getIP(dhcpClass->_dhcpUdpSocket.remoteIP(&dhcpClass->_dhcpUdpSocket)) ) {
-					dhcpClass->_dhcpUdpSocket.readChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpDhcpServerIp, sizeof(dhcpClass->_dhcpDhcpServerIp));
+				  dhcpClass->_dhcpDhcpServerIp == getIP(dhcpClass->_dhcpUdpSocket.udpClientRemoteIP(&dhcpClass->_dhcpUdpSocket)) ) {
+					dhcpClass->_dhcpUdpSocket.udpClientReadChars(&dhcpClass->_dhcpUdpSocket, dhcpClass->_dhcpDhcpServerIp, sizeof(dhcpClass->_dhcpDhcpServerIp));
 				} else {
 					// Skip over the rest of this option
-					dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len);
+					dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len);
 				}
 				break;
 
 			case dhcpT1value :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpT1, sizeof(dhcpClass->_dhcpT1));
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpT1, sizeof(dhcpClass->_dhcpT1));
 				dhcpClass->_dhcpT1 = ntohl(dhcpClass->_dhcpT1);
 				break;
 
 			case dhcpT2value :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpT2, sizeof(dhcpClass->_dhcpT2));
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpT2, sizeof(dhcpClass->_dhcpT2));
 				dhcpClass->_dhcpT2 = ntohl(dhcpClass->_dhcpT2);
 				break;
 
 			case dhcpIPaddrLeaseTime :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpLeaseTime, sizeof(dhcpClass->_dhcpLeaseTime));
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t*)&dhcpClass->_dhcpLeaseTime, sizeof(dhcpClass->_dhcpLeaseTime));
 				dhcpClass->_dhcpLeaseTime = ntohl(dhcpClass->_dhcpLeaseTime);
 				dhcpClass->_renewInSec = dhcpClass->_dhcpLeaseTime;
 				break;
 
 			default :
-				opt_len = dhcpClass->_dhcpUdpSocket.read(&dhcpClass->_dhcpUdpSocket);
+				opt_len = dhcpClass->_dhcpUdpSocket.udpClientRead(&dhcpClass->_dhcpUdpSocket);
 				// Skip over the rest of this option
-				dhcpClass->_dhcpUdpSocket.readBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len);
+				dhcpClass->_dhcpUdpSocket.udpClientReadBytes(&dhcpClass->_dhcpUdpSocket, (uint8_t *)NULL, opt_len);
 				break;
 			}
 		}
 	}
 	// Need to skip to end of the packet regardless here
-	dhcpClass->_dhcpUdpSocket.flush(&dhcpClass->_dhcpUdpSocket); // FIXME
+	dhcpClass->_dhcpUdpSocket.udpClientFlush(&dhcpClass->_dhcpUdpSocket); // FIXME
 
 	return type;
 }

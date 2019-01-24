@@ -5,6 +5,8 @@
 #include "utility/w5100.h"
 #include "../cores/Udp.h"
 #include "../cores/Client.h"
+//#include "Dhcp.h"
+
 
 #if defined(RAMEND) /*&& defined(RAMSTART) && ((RAMEND - RAMSTART) <= 2048)*/
 #define MAX_SOCK_NUM 4
@@ -63,6 +65,8 @@ struct EthernetClass {
   struct IPAddress*  _dnsServerAddress;
   struct DhcpClass* _dhcp;
 };
+
+struct EthernetClass *ethernetClass;
 
 int begin(struct EthernetClass *ethernetClass, uint8_t *mac, unsigned long timeout, unsigned long responseTimeout);
 int maintain(struct EthernetClass *ethernetClass);
@@ -149,6 +153,8 @@ struct DhcpClass {
 	struct EthernetUDP _dhcpUdpSocket;
 };
 
+DhcpClass * dhcpClass;
+
 int request_DHCP_lease(struct DhcpClass *dhcpClass);
 void reset_DHCP_lease(struct DhcpClass *dhcpClass);
 void presend_DHCP(struct DhcpClass *dhcpClass);
@@ -162,5 +168,11 @@ struct IPAddress * getDhcpServerIp(struct DhcpClass *dhcpClass);
 struct IPAddress * getDnsServerIp(struct DhcpClass *dhcpClass);
 int beginWithDHCP(struct DhcpClass *dhcpClass, uint8_t *, unsigned long timeout, unsigned long responseTimeout);
 int checkLease(struct DhcpClass *dhcpClass);
+
+#define DHCP_CHECK_NONE         (0)
+#define DHCP_CHECK_RENEW_FAIL   (1)
+#define DHCP_CHECK_RENEW_OK     (2)
+#define DHCP_CHECK_REBIND_FAIL  (3)
+#define DHCP_CHECK_REBIND_OK    (4)
 
 #endif

@@ -2,12 +2,15 @@
 #define DNSClient_h
 
 #include "Ethernet.h"
+//#include "utility/w5100.h"
 
-struct _DNSClient {
-  struct IPAddress iDNSServer;
+struct DNSClient {
+  struct IPAddress * iDNSServer;
 	uint16_t iRequestId;
 	struct EthernetUDP iUdp;
-} DNSClient;
+};
+
+struct DNSClient *dnsClient;
 
 void dnsClientBegin(struct DNSClient *dnsClient, struct IPAddress * aDNSServer);
 int dnsInet_aton(struct DNSClient *dnsClient, const char *aIPAddrString, struct IPAddress * aResult);

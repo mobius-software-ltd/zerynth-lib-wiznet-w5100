@@ -11,14 +11,14 @@
 #include "lib/Ethernet/Ethernet.h"
 
 //spiSettingsConstructor(spiSettings);
-W5100Class * w5100Class;
-SPIClass * spiClass;
+//W5100Class * w5100Class;
+//SPIClass * spiClass;
 //spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
-DhcpClass * dhcpClass;
+//DhcpClass * dhcpClass;
 
 //#define SPI_ETHERNET_SETTINGS spiSettings
 
-struct EthernetClass *ethernetClass;
+//struct EthernetClass *ethernetClass;
 uint8_t *mac;
 unsigned long timeout;
 unsigned long responseTimeout;

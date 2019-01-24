@@ -2,6 +2,7 @@
 #define Dhcp_h
 
 #include "inttypes.h"
+#include "Ethernet.h"
 
 #define STATE_DHCP_START	0
 #define	STATE_DHCP_DISCOVER	1
@@ -31,12 +32,13 @@
 #define MAX_DHCP_OPT		16
 #define HOST_NAME "WIZnet"
 #define DEFAULT_LEASE	(900)
+/*
 #define DHCP_CHECK_NONE         (0)
 #define DHCP_CHECK_RENEW_FAIL   (1)
 #define DHCP_CHECK_RENEW_OK     (2)
 #define DHCP_CHECK_REBIND_FAIL  (3)
 #define DHCP_CHECK_REBIND_OK    (4)
-
+*/
 enum
 {
 	padOption		=	0,

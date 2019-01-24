@@ -1,5 +1,5 @@
 #include "Ethernet.h"
-#include "Dhcp.h"
+//#include "Dhcp.h"
 
 void ethernetUDP_init(struct EthernetUDP *ethernetUDP) { ethernetUDP -> sockindex = MAX_SOCK_NUM; }
 

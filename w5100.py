@@ -27,7 +27,8 @@ This module supports SSL/TLS
                          "-I.../csrc/lib/cores/",
                          "-I.../csrc/lib/libraries/"
                          ])
-
+@native_c("_w5100_init",["csrc/w5100_ifc.c"],["DHCP","MAC={0x00,0x08,0xdc,0x78,0x91,0x71}"],[])
+"""
 @native_c("_w5100_init",["csrc/w5100_ifc.c",
                          "csrc/lib/Ethernet/*",
                          "csrc/lib/cores/*",
@@ -35,11 +36,8 @@ This module supports SSL/TLS
                          ,[],[
                          "-I.../csrc/lib/Ethernet/",
                          "-I.../csrc/lib/cores/",
-                         "-I.../csrc/lib/libraries/",
-                         "-I"
+                         "-I.../csrc/lib/libraries/"
                          ])
-"""
-@native_c("_w5100_init",["csrc/w5100_ifc.c"],["DHCP","MAC={0x00,0x08,0xdc,0x78,0x91,0x71}"],[])
 def _hwinit():
     pass
 
@@ -48,9 +46,10 @@ def auto_init():
 
 def init():
     _hwinit()
+    """
     __builtins__.__default_net["eth"] = __module__
     __builtins__.__default_net["sock"][0] = __module__ #AF_INET
-
+    """
 @native_c("w5100_eth_link",[],[])
 def link():
     pass

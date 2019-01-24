@@ -3,6 +3,14 @@
 #include "inttypes.h"
 #include "variant.h"
 #include <stdio.h>
+/*
+#ifndef _SAM3N_PIO_COMPONENT_
+#include "../Ethernet/utility/component_pio.h"
+#endif
+*/
+#ifndef utils_h
+#include "../cores/utils.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +38,8 @@ typedef struct _SPISettings {
   uint32_t config;
 	BitOrder border;
 } SPISettings;
+
+SPISettings * spiSettings;
 
 int spiSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
 int spiSettingsConstructor(SPISettings * spiSettings);
@@ -74,6 +84,8 @@ typedef struct _SPIClass {
 	uint8_t interruptSave;    // temp storage, to restore state
 	uint32_t interruptMask[4];
 } SPIClass;
+
+SPIClass * spiClass;
 
 spiClassConstructor(SPIClass * spiClass, Spi *_spi, uint32_t _id/*, void(*_initCb)(void)*/);
 uint8_t spiClassTransfer(SPIClass * spiClass, uint8_t _pin, uint8_t _data, SPITransferMode _mode);

@@ -1,6 +1,5 @@
-#include "Ethernet.h"
 #include "Dns.h"
-#include "utility/w5100.h"
+//#include "utility/w5100.h"
 
 #define SOCKET_NONE              255
 // Various flags and header field values for a DNS message
@@ -38,7 +37,7 @@
 #define TRUNCATED        -3
 #define INVALID_RESPONSE -4
 
-void dnsClientBegin(struct DNSClient *dnsClient, struct IPAddress aDNSServer)
+void dnsClientBegin(struct DNSClient *dnsClient, struct IPAddress * aDNSServer)
 {
 	dnsClient->iDNSServer = aDNSServer;
 	dnsClient->iRequestId = 0;
@@ -89,23 +88,23 @@ int dnsGetHostByName(struct DNSClient *dnsClient, const char* aHostname, struct 
 	}
 
 	// Check we've got a valid DNS server to use
-	if (dnsClient->iDNSServer._address.bytes == INADDR_NONE._address.bytes) {
+	if (dnsClient->iDNSServer == INADDR_NONE._address.bytes) {
 		return INVALID_SERVER;
 	}
 
 	// Find a socket to use
-	if (dnsClient->iUdp.begin(&dnsClient->iUdp, 1024+(millis() & 0xF)) == 1) {
+	if (dnsClient->iUdp.udpClientBegin(&dnsClient->iUdp, 1024+(millis() & 0xF)) == 1) {
 		// Try up to three times
 		int retries = 0;
 		// while ((retries < 3) && (ret <= 0)) {
 		// Send DNS request
-		ret = dnsClient->iUdp.beginPacketIP(&dnsClient->iUdp, dnsClient->iDNSServer, DNS_PORT);
+		ret = dnsClient->iUdp.udpClientBeginPacketIP(&dnsClient->iUdp, dnsClient->iDNSServer, DNS_PORT);
 		if (ret != 0) {
 			// Now output the request data
 			ret = BuildRequest(dnsClient, aHostname);
 			if (ret != 0) {
 				// And finally send the request
-				ret = dnsClient->iUdp.endPacket(&dnsClient->iUdp);
+				ret = dnsClient->iUdp.udpClientEndPacket(&dnsClient->iUdp);
 				if (ret != 0) {
 					// Now wait for a response
 					int wait_retries = 0;
@@ -121,7 +120,7 @@ int dnsGetHostByName(struct DNSClient *dnsClient, const char* aHostname, struct 
 		//}
 
 		// We're done with the socket now
-		dnsClient->iUdp.stop(&dnsClient->iUdp);
+		dnsClient->iUdp.udpClientStop(&dnsClient->iUdp);
 	}
 
 	return ret;
@@ -152,20 +151,20 @@ uint16_t dnsBuildRequest(struct DNSClient *dnsClient, const char* aName)
 
 	// FIXME We should also check that there's enough space available to write to, rather
 	// FIXME than assume there's enough space (as the code does at present)
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&dnsClient->iRequestId, sizeof(dnsClient->iRequestId));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&dnsClient->iRequestId, sizeof(dnsClient->iRequestId));
 
 	twoByteBuffer = htons(QUERY_FLAG | OPCODE_STANDARD_QUERY | RECURSION_DESIRED_FLAG);
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
 	twoByteBuffer = htons(1);  // One question record
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
 	twoByteBuffer = 0;  // Zero answer records
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 	// and zero additional records
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
 	// Build question
 	const char* start =aName;
@@ -182,22 +181,22 @@ uint16_t dnsBuildRequest(struct DNSClient *dnsClient, const char* aName)
 		if (end-start > 0) {
 			// Write out the size of this section
 			len = end-start;
-			dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, &len, sizeof(len));
+			dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, &len, sizeof(len));
 			// And then write out the section
-			dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)start, end-start);
+			dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)start, end-start);
 		}
 		start = end+1;
 	}
 	// We've got to the end of the question name, so
 	// terminate it with a zero-length section
 	len = 0;
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, &len, sizeof(len));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, &len, sizeof(len));
 	// Finally the type and class of question
 	twoByteBuffer = htons(TYPE_A);
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
 	twoByteBuffer = htons(CLASS_IN);  // Internet class of question
-	dnsClient->iUdp.writeBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
+	dnsClient->iUdp.udpClientWriteBuffer(&dnsClient->iUdp, (uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 	// Success!  Everything buffered okay
 	return 1;
 }
@@ -207,7 +206,7 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 	uint32_t startTime = millis();
 
 	// Wait for a response packet
-	while (dnsClient->iUdp.parsePacket(&dnsClient->iUdp) <= 0) {
+	while (dnsClient->iUdp.udpClientParsePacket(&dnsClient->iUdp) <= 0) {
 		if ((millis() - startTime) > aTimeout) {
 			return TIMED_OUT;
 		}
@@ -223,30 +222,30 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 	} header;
 
 	// Check that it's a response from the right server and the right port
-	if ( (dnsClient->iDNSServer._address.bytes != (dnsClient->iUdp.remoteIP(&dnsClient->iUdp))._address.bytes) || (dnsClient->iUdp.remotePort(&dnsClient->iUdp) != DNS_PORT)) {
+	if ( (dnsClient->iDNSServer != (dnsClient->iUdp.udpClientRemoteIP(&dnsClient->iUdp))._address.bytes) || (dnsClient->iUdp.udpClientRemotePort(&dnsClient->iUdp) != DNS_PORT)) {
 		// It's not from who we expected
 		return INVALID_SERVER;
 	}
 
 	// Read through the rest of the response
-	if (dnsClient->iUdp.available(&dnsClient->iUdp) < DNS_HEADER_SIZE) {
+	if (dnsClient->iUdp.udpClientAvailable(&dnsClient->iUdp) < DNS_HEADER_SIZE) {
 		return TRUNCATED;
 	}
-	dnsClient->iUdp.readBytes(&dnsClient->iUdp, header.byte, DNS_HEADER_SIZE);
+	dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, header.byte, DNS_HEADER_SIZE);
 
 	uint16_t header_flags = htons(header.word[1]);
 	// Check that it's a response to this request
 	if ((dnsClient->iRequestId != (header.word[0])) ||
 	  ((header_flags & QUERY_RESPONSE_MASK) != (uint16_t)RESPONSE_FLAG) ) {
 		// Mark the entire packet as read
-		dnsClient->iUdp.flush(&dnsClient->iUdp); // FIXME
+		dnsClient->iUdp.udpClientFlush(&dnsClient->iUdp); // FIXME
 		return INVALID_RESPONSE;
 	}
 	// Check for any errors in the response (or in our request)
 	// although we don't do anything to get round these
 	if ( (header_flags & TRUNCATION_FLAG) || (header_flags & RESP_MASK) ) {
 		// Mark the entire packet as read
-		dnsClient->iUdp.flush(&dnsClient->iUdp); // FIXME
+		dnsClient->iUdp.udpClientFlush(&dnsClient->iUdp); // FIXME
 		return -5; //INVALID_RESPONSE;
 	}
 
@@ -254,7 +253,7 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 	uint16_t answerCount = htons(header.word[3]);
 	if (answerCount == 0) {
 		// Mark the entire packet as read
-		dnsClient->iUdp.flush(&dnsClient->iUdp); // FIXME
+		dnsClient->iUdp.udpClientFlush(&dnsClient->iUdp); // FIXME
 		return -6; //INVALID_RESPONSE;
 	}
 
@@ -263,16 +262,16 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 		// Skip over the name
 		uint8_t len;
 		do {
-			dnsClient->iUdp.readBytes(&dnsClient->iUdp, &len, sizeof(len));
+			dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, &len, sizeof(len));
 			if (len > 0) {
 				// Don't need to actually read the data out for the string, just
 				// advance ptr to beyond it
-				dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, (size_t)len);
+				dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, (size_t)len);
 			}
 		} while (len != 0);
 
 		// Now jump over the type and class
-		dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, 4);
+		dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, 4);
 	}
 
 	// Now we're up to the bit we're interested in, the answer
@@ -284,14 +283,14 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 		// Skip the name
 		uint8_t len;
 		do {
-			dnsClient->iUdp.readBytes(&dnsClient->iUdp, &len, sizeof(len));
+			dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, &len, sizeof(len));
 			if ((len & LABEL_COMPRESSION_MASK) == 0) {
 				// It's just a normal label
 				if (len > 0) {
 					// And it's got a length
 					// Don't need to actually read the data out for the string,
 					// just advance ptr to beyond it
-					dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, len);
+					dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, len);
 				}
 			} else {
 				// This is a pointer to a somewhere else in the message for the
@@ -301,7 +300,7 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 				// a pointer.  Either way, when we get here we're at the end of
 				// the name
 				// Skip over the pointer
-				dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, 1); // we don't care about the byte
+				dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, 1); // we don't care about the byte
 				// And set len so that we drop out of the name loop
 				len = 0;
 			}
@@ -310,35 +309,35 @@ uint16_t dnsProcessResponse(struct DNSClient *dnsClient, uint16_t aTimeout, stru
 		// Check the type and class
 		uint16_t answerType;
 		uint16_t answerClass;
-		dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t*)&answerType, sizeof(answerType));
-		dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t*)&answerClass, sizeof(answerClass));
+		dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t*)&answerType, sizeof(answerType));
+		dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t*)&answerClass, sizeof(answerClass));
 
 		// Ignore the Time-To-Live as we don't do any caching
-		dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, TTL_SIZE); // don't care about the returned bytes
+		dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, TTL_SIZE); // don't care about the returned bytes
 
 		// And read out the length of this answer
 		// Don't need header_flags anymore, so we can reuse it here
-		dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t*)&header_flags, sizeof(header_flags));
+		dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t*)&header_flags, sizeof(header_flags));
 
 		if ( (htons(answerType) == TYPE_A) && (htons(answerClass) == CLASS_IN) ) {
 			if (htons(header_flags) != 4) {
 				// It's a weird size
 				// Mark the entire packet as read
-				dnsClient->iUdp.flush(&dnsClient->iUdp); // FIXME
+				dnsClient->iUdp.udpClientFlush(&dnsClient->iUdp); // FIXME
 				return -9;//INVALID_RESPONSE;
 			}
 			// FIXME: seeems to lock up here on ESP8266, but why??
     	uint8_t* addr = raw_address(aAddress);
-			dnsClient->iUdp.readBytes(&dnsClient->iUdp, addr, 4);
+			dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, addr, 4);
 			return SUCCESS;
 		} else {
 			// This isn't an answer type we're after, move onto the next one
-			dnsClient->iUdp.readBytes(&dnsClient->iUdp, (uint8_t *)NULL, htons(header_flags));
+			dnsClient->iUdp.udpClientReadBytes(&dnsClient->iUdp, (uint8_t *)NULL, htons(header_flags));
 		}
 	}
 
 	// Mark the entire packet as read
-	dnsClient->iUdp.flush(&dnsClient->iUdp); // FIXME
+	dnsClient->iUdp.udpClientFlush(&dnsClient->iUdp); // FIXME
 
 	// If we get here then we haven't found an answer
 	return -10; //INVALID_RESPONSE;

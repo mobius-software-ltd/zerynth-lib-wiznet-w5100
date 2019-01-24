@@ -4,7 +4,7 @@
 
 void stream_init(struct Stream *stream)
 {
-  stream -> _timeout = 1000;
+  stream->_timeout = 1000;
 }
 
 // protected method to read stream with timeout
@@ -15,7 +15,7 @@ int streamTimedRead(struct Stream *stream)
   do {
     c = read();
     if (c >= 0) return c;
-  } while(millis() - stream->_startMillis < _timeout);
+  } while(millis() - stream->_startMillis < stream->_timeout);
   return -1;     // -1 indicates timeout
 }
 
@@ -27,7 +27,7 @@ int streamTimedPeek(struct Stream *stream)
   do {
     c = peek();
     if (c >= 0) return c;
-  } while(millis() - stream->_startMillis < _timeout);
+  } while(millis() - stream->_startMillis < stream->_timeout);
   return -1;     // -1 indicates timeout
 }
 
@@ -77,20 +77,20 @@ unsigned long streamGetTimeout(struct Stream *stream)
  // find returns true if the target string is found
 bool  streamFind(struct Stream *stream, char *target)
 {
-  return streamFindUntil(target, strlen(target), NULL, 0);
+  return streamFindUntilLength(stream, target, strlen(target), NULL, 0);
 }
 
 // reads data from the stream until the target string of given length is found
 // returns true if target string is found, false if timed out
-bool streamFind(struct Stream *stream, char *target, size_t length)
+bool streamFindLength(struct Stream *stream, char *target, size_t length)
 {
-  return streamFindUntil(target, length, NULL, 0);
+  return streamFindUntilLength(stream, target, length, NULL, 0);
 }
 
 // as find but search ends if the terminator string is found
 bool  streamFindUntil(struct Stream *stream, char *target, char *terminator)
 {
-  return streamFindUntil(target, strlen(target), terminator, strlen(terminator));
+  return streamFindUntilLength(stream, target, strlen(target), terminator, strlen(terminator));
 }
 
 // reads data from the stream until the target string of the given length is found
@@ -100,10 +100,10 @@ bool streamFindUntilLength(struct Stream *stream, char *target, size_t targetLen
 {
   if (terminator == NULL) {
     MultiTarget t[1] = {{target, targetLen, 0}};
-    return findMulti(t, 1) == 0 ? true : false;
+    return findMulti(stream, t, 1) == 0 ? true : false;
   } else {
     MultiTarget t[2] = {{target, targetLen, 0}, {terminator, termLen, 0}};
-    return findMulti(t, 2) == 0 ? true : false;
+    return findMulti(stream, t, 2) == 0 ? true : false;
   }
 }
 
@@ -238,7 +238,8 @@ String streamReadStringUntil(struct Stream *stream, char terminator)
   return ret;
 }
 */
-int streamFindMulti(struct Stream *stream, struct Stream::MultiTarget *targets, int tCount) {
+/*
+int streamFindMulti(struct Stream *stream, MultiTarget * targets, int tCount) {
   // any zero length target string automatically matches and would make
   // a mess of the rest of the algorithm.
   for (struct MultiTarget *t = targets; t < targets+tCount; ++t) {
@@ -302,3 +303,4 @@ int streamFindMulti(struct Stream *stream, struct Stream::MultiTarget *targets, 
   // unreachable
   return -1;
 }
+*/

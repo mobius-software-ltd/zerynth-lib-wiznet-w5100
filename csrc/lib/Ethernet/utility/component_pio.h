@@ -1,6 +1,6 @@
 #ifndef _SAM3N_PIO_COMPONENT_
 #define _SAM3N_PIO_COMPONENT_
-
+#include "inttypes.h"
 /* ============================================================================= */
 /**  SOFTWARE API DEFINITION FOR Parallel Input/Output Controller */
 /* ============================================================================= */

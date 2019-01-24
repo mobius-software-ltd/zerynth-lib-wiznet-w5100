@@ -143,7 +143,7 @@ void spiClassUsingInterrupt(SPIClass * spiClass, uint8_t interruptNumber)
 
 void spiClassBeginTransactionNoPin(SPIClass * spiClass, SPISettings * settings) { spiClassBeginTransaction(spiClass, BOARD_SPI_DEFAULT_SS, settings); }
 
-void spiClassBeginTransaction(SPIClass * spiClass, uint8_t pin, SPISettings settings)
+void spiClassBeginTransaction(SPIClass * spiClass, uint8_t pin, SPISettings * settings)
 {
 	uint8_t mode = spiClass -> interruptMode;
 	if (mode > 0) {
@@ -158,8 +158,8 @@ void spiClassBeginTransaction(SPIClass * spiClass, uint8_t pin, SPISettings sett
 		}
 	}
 	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(pin);
-	spiClass -> bitOrder[ch] = settings.border;
-	SPI_ConfigureNPCS(spiClass -> spi, ch, settings.config);
+	spiClass -> bitOrder[ch] = settings->border;
+	SPI_ConfigureNPCS(spiClass -> spi, ch, settings->config);
 }
 
 void spiClassEndTransaction(SPIClass * spiClass)

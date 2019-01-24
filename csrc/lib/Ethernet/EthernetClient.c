@@ -1,6 +1,8 @@
-#include "Ethernet.h"
+#include "EthernetClient.h"
+/*
 #include "Dns.h"
 #include "utility/w5100.h"
+*/
 
 /*
 W5100Class * w5100Class;

@@ -1,6 +1,9 @@
 #ifndef _SAM3X8E_
 #define _SAM3X8E_
 
+#ifndef _SAM3N_PIO_COMPONENT_
+#include "../Ethernet/utility/component_pio.h"
+#endif
 
 /* ************************************************************************** */
 /*   CMSIS DEFINITIONS FOR SAM3X8E */

@@ -1,9 +1,9 @@
 #ifndef	W5100_H_INCLUDED
 #define	W5100_H_INCLUDED
 
-#include "component_pio.h"
+//#include "component_pio.h"
 #include "../../libraries/SPI.h"
-#include "../../libraries/sam3x8e.h"
+//#include "../../libraries/sam3x8e.h"
 
 #ifndef ethernet_h_
 exit(EXIT_FAILURE);
@@ -88,6 +88,8 @@ typedef struct _W5100Class{
   uint16_t SSIZE;
   uint16_t SMASK;
 } W5100Class;
+
+W5100Class * w5100Class;
 
 uint8_t w5100ClassInit(W5100Class *w5100Class);
 inline void w5100ClassSetGatewayIp(W5100Class *w5100Class, const uint8_t * addr);
@@ -187,6 +189,7 @@ uint16_t SBASE(W5100Class *w5100Class, uint8_t socknum);
 uint16_t RBASE(W5100Class *w5100Class, uint8_t socknum);
 
 /* Definitions and types for pins */
+/*
 typedef enum _EAnalogChannel
 {
   NO_ADC=-1,
@@ -252,14 +255,14 @@ typedef enum _ETCChannel
 
 typedef enum _EPioType
 {
-  PIO_NOT_A_PIN, /* Not under control of a peripheral. */
-  PIO_PERIPH_A, /* The pin is controlled by the associated signal of peripheral A. */
-  PIO_PERIPH_B, /* The pin is controlled by the associated signal of peripheral B. */
-  PIO_PERIPH_C, /* The pin is controlled by the associated signal of peripheral C. */
-  PIO_PERIPH_D, /* The pin is controlled by the associated signal of peripheral D. */
-  PIO_INPUT, /* The pin is an input. */
-  PIO_OUTPUT_0, /* The pin is an output and has a default level of 0. */
-  PIO_OUTPUT_1 /* The pin is an output and has a default level of 1. */
+  PIO_NOT_A_PIN,
+  PIO_PERIPH_A,
+  PIO_PERIPH_B,
+  PIO_PERIPH_C,
+  PIO_PERIPH_D,
+  PIO_INPUT,
+  PIO_OUTPUT_0,
+  PIO_OUTPUT_1
 } EPioType ;
 
 typedef struct _PinDescription
@@ -270,14 +273,14 @@ typedef struct _PinDescription
   EPioType ulPinType ;
   uint32_t ulPinConfiguration ;
   uint32_t ulPinAttribute ;
-  EAnalogChannel ulAnalogChannel ; /* Analog pin in the Arduino context (label on the board) */
-  EAnalogChannel ulADCChannelNumber ; /* ADC Channel number in the SAM device */
+  EAnalogChannel ulAnalogChannel ;
+  EAnalogChannel ulADCChannelNumber ;
   EPWMChannel ulPWMChannel ;
   ETCChannel ulTCChannel ;
 } PinDescription ;
-
+*/
 PinDescription _g_APinDescription[];
-
+/*
 #define INPUT 0x0
 #define OUTPUT 0x1
 #define INPUT_PULLUP 0x2
@@ -296,6 +299,7 @@ uint8_t g_pinStatus[];
 #define PIN_STATUS_DW_LOW                (0x10)
 #define PIN_STATUS_DW_HIGH               (0x11)
 #define PIO_PULLUP  (1u << 0)
+/*
 #define PIO_DEFAULT (0u << 0)
 //#define ADC 0
 #define PIN_ATTR_COMBO         (1UL<<0)
@@ -303,7 +307,7 @@ uint8_t g_pinStatus[];
 #define PIN_ATTR_DIGITAL       (1UL<<2)
 #define PIN_ATTR_PWM           (1UL<<3)
 #define PIN_ATTR_TIMER         (1UL<<4)
-
+*/
 /*extern*/ void pinMode( uint32_t ulPin, uint32_t ulMode );
 
 bool hasOffsetAddressMapping(void);
