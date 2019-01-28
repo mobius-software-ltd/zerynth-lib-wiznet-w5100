@@ -13,7 +13,7 @@ int streamTimedRead(struct Stream *stream)
   int c;
   stream->_startMillis = millis();
   do {
-    c = read();
+    c = stream->read(&stream);
     if (c >= 0) return c;
   } while(millis() - stream->_startMillis < stream->_timeout);
   return -1;     // -1 indicates timeout
@@ -25,7 +25,7 @@ int streamTimedPeek(struct Stream *stream)
   int c;
   stream->_startMillis = millis();
   do {
-    c = peek();
+    c = stream->peek(&stream);
     if (c >= 0) return c;
   } while(millis() - stream->_startMillis < stream->_timeout);
   return -1;     // -1 indicates timeout
@@ -37,7 +37,7 @@ int streamPeekNextDigit(struct Stream *stream, LookaheadMode lookahead, bool det
 {
   int c;
   while (1) {
-    c = timedPeek();
+    c = streamTimedPeek(stream);
 
     if( c < 0 ||
         c == '-' ||
@@ -57,7 +57,7 @@ int streamPeekNextDigit(struct Stream *stream, LookaheadMode lookahead, bool det
         case SKIP_ALL:
             break;
     }
-    read();  // discard non-numeric
+    stream->read(&stream); // discard non-numeric
   }
 }
 
@@ -100,10 +100,10 @@ bool streamFindUntilLength(struct Stream *stream, char *target, size_t targetLen
 {
   if (terminator == NULL) {
     MultiTarget t[1] = {{target, targetLen, 0}};
-    return findMulti(stream, t, 1) == 0 ? true : false;
+    return streamFindMulti(stream, t, 1) == 0 ? true : false;
   } else {
     MultiTarget t[2] = {{target, targetLen, 0}, {terminator, termLen, 0}};
-    return findMulti(stream, t, 2) == 0 ? true : false;
+    return streamFindMulti(stream, t, 2) == 0 ? true : false;
   }
 }
 
@@ -118,7 +118,7 @@ long streamParseInt(struct Stream *stream, LookaheadMode lookahead, char ignore)
   long value = 0;
   int c;
 
-  c = peekNextDigit(lookahead, false);
+  c = streamPeekNextDigit(stream, lookahead, false);
   // ignore non numeric leading characters
   if(c < 0)
     return 0; // zero returned if timeout
@@ -130,8 +130,8 @@ long streamParseInt(struct Stream *stream, LookaheadMode lookahead, char ignore)
       isNegative = true;
     else if(c >= '0' && c <= '9')        // is c a digit?
       value = value * 10 + c - '0';
-    read();  // consume the character we got with peek
-    c = timedPeek();
+    stream->read(&stream);  // consume the character we got with peek
+    c = streamTimedPeek(stream);
   }
   while( (c >= '0' && c <= '9') || c == ignore );
 
@@ -149,7 +149,7 @@ float streamParseFloat(struct Stream *stream, LookaheadMode lookahead, char igno
   int c;
   float fraction = 1.0;
 
-  c = peekNextDigit(lookahead, true);
+  c = streamPeekNextDigit(stream, lookahead, true);
     // ignore non numeric leading characters
   if(c < 0)
     return 0; // zero returned if timeout
@@ -166,8 +166,8 @@ float streamParseFloat(struct Stream *stream, LookaheadMode lookahead, char igno
       if(isFraction)
          fraction *= 0.1;
     }
-    read();  // consume the character we got with peek
-    c = timedPeek();
+    stream->read(&stream);  // consume the character we got with peek
+    c = streamTimedPeek(stream);
   }
   while( (c >= '0' && c <= '9')  || (c == '.' && !isFraction) || c == ignore );
 
@@ -188,7 +188,7 @@ size_t streamReadBytes(struct Stream *stream, char *buffer, size_t length)
 {
   size_t count = 0;
   while (count < length) {
-    int c = timedRead();
+    int c = streamTimedRead(stream);
     if (c < 0) break;
     *buffer++ = (char)c;
     count++;
@@ -206,53 +206,31 @@ size_t streamReadBytesUntil(struct Stream *stream, char terminator, char *buffer
   if (length < 1) return 0;
   size_t index = 0;
   while (index < length) {
-    int c = timedRead();
+    int c = streamTimedRead(stream);
     if (c < 0 || c == terminator) break;
     *buffer++ = (char)c;
     index++;
   }
   return index; // return number of characters, not including null terminator
 }
-/*
-String streamReadString(struct Stream *stream,)
-{
-  String ret;
-  int c = timedRead();
-  while (c >= 0)
-  {
-    ret += (char)c;
-    c = timedRead();
-  }
-  return ret;
-}
 
-String streamReadStringUntil(struct Stream *stream, char terminator)
-{
-  String ret;
-  int c = timedRead();
-  while (c >= 0 && c != terminator)
-  {
-    ret += (char)c;
-    c = timedRead();
-  }
-  return ret;
-}
-*/
-/*
 int streamFindMulti(struct Stream *stream, MultiTarget * targets, int tCount) {
   // any zero length target string automatically matches and would make
   // a mess of the rest of the algorithm.
-  for (struct MultiTarget *t = targets; t < targets+tCount; ++t) {
+
+  MultiTarget *t = targets;
+  for (; t < targets+tCount; ++t) {
     if (t->len <= 0)
       return t - targets;
   }
 
   while (1) {
-    int c = timedRead();
+    int c = streamTimedRead(stream);
     if (c < 0)
       return -1;
 
-    for (struct MultiTarget *t = targets; t < targets+tCount; ++t) {
+    MultiTarget *t = targets;
+    for (; t < targets+tCount; ++t) {
       // the simple case is if we match, deal with that first.
       if (c == t->str[t->index]) {
         if (++t->index == t->len)
@@ -303,4 +281,3 @@ int streamFindMulti(struct Stream *stream, MultiTarget * targets, int tCount) {
   // unreachable
   return -1;
 }
-*/

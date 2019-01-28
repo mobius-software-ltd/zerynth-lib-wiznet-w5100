@@ -1,24 +1,7 @@
-
 #include "zerynth.h"
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include "inttypes.h"
-
 #include "lib/Ethernet/Ethernet.h"
+#include "lib/libraries/random.h"
 
-//spiSettingsConstructor(spiSettings);
-//W5100Class * w5100Class;
-//SPIClass * spiClass;
-//spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
-//DhcpClass * dhcpClass;
-
-//#define SPI_ETHERNET_SETTINGS spiSettings
-
-//struct EthernetClass *ethernetClass;
 uint8_t *mac;
 unsigned long timeout;
 unsigned long responseTimeout;
@@ -52,7 +35,6 @@ C_NATIVE(_w5100_init)
     return ret;
 }
 
-
 C_NATIVE(w5100_eth_link)
 {
     NATIVE_UNWARN();
@@ -64,7 +46,7 @@ C_NATIVE(w5100_eth_unlink)
 {
     NATIVE_UNWARN();
     RELEASE_GIL();
-    socketDisconnect(ethernetClass, SOCK_NUM);
+    socketDisconnect(SOCK_NUM);
     ACQUIRE_GIL();
     return SOCK_OK;
 }
@@ -83,6 +65,7 @@ C_NATIVE(w5100_eth_is_linked)
 C_NATIVE(w5100_net_link_info)
 {
     NATIVE_UNWARN();
+
     w5100ClassGetMACAddress(w5100Class, getWIZNETINFO->mac);
     w5100ClassGetIPAddress(w5100Class, getWIZNETINFO->ip);
     w5100ClassGetSubnetMask(w5100Class, getWIZNETINFO->sn);
@@ -91,7 +74,7 @@ C_NATIVE(w5100_net_link_info)
     *res = getWIZNETINFO;
     return SOCK_OK;
 }
-
+/*
 C_NATIVE(w5100_net_set_link_info)
 {
     C_NATIVE_UNWARN();
@@ -122,7 +105,6 @@ C_NATIVE(w5100_net_set_link_info)
     return SOCK_OK;
 }
 
-/*
 C_NATIVE(w5100_net_resolve)
 {
     C_NATIVE_UNWARN();

@@ -1,13 +1,9 @@
+//#pragma once
+
 #ifndef	W5100_H_INCLUDED
 #define	W5100_H_INCLUDED
 
-//#include "component_pio.h"
 #include "../../libraries/SPI.h"
-//#include "../../libraries/sam3x8e.h"
-
-#ifndef ethernet_h_
-exit(EXIT_FAILURE);
-#endif
 
 typedef uint8_t SOCKET;
 
@@ -79,7 +75,7 @@ typedef enum {
   LINK_OFF
 } W5100Linkstatus;
 
-typedef struct _W5100Class{
+typedef struct{
   uint8_t chip;
   uint8_t CH_BASE_MSB; // 1 redundant byte, saves ~80 bytes code on AVR
   uint8_t ss_pin;
@@ -89,19 +85,19 @@ typedef struct _W5100Class{
   uint16_t SMASK;
 } W5100Class;
 
-W5100Class * w5100Class;
+extern W5100Class * w5100Class;
 
 uint8_t w5100ClassInit(W5100Class *w5100Class);
-inline void w5100ClassSetGatewayIp(W5100Class *w5100Class, const uint8_t * addr);
-inline void w5100ClassGetGatewayIp(W5100Class *w5100Class, uint8_t * addr);
-inline void w5100ClassSetSubnetMask(W5100Class *w5100Class, const uint8_t * addr);
-inline void w5100ClassGetSubnetMask(W5100Class *w5100Class, uint8_t * addr);
-inline void w5100ClassSetMACAddress(W5100Class *w5100Class, const uint8_t * addr);
-inline void w5100ClassGetMACAddress(W5100Class *w5100Class, uint8_t * addr);
-inline void w5100ClassSetIPAddress(W5100Class *w5100Class, const uint8_t * addr);
-inline void w5100ClassGetIPAddress(W5100Class *w5100Class, uint8_t * addr);
-inline void w5100ClassSetRetransmissionTime(W5100Class *w5100Class, uint16_t timeout);
-inline void w5100ClassSetRetransmissionCount(W5100Class *w5100Class, uint8_t retry);
+void w5100ClassSetGatewayIp(W5100Class *w5100Class, const uint8_t * addr);
+void w5100ClassGetGatewayIp(W5100Class *w5100Class, uint8_t * addr);
+void w5100ClassSetSubnetMask(W5100Class *w5100Class, const uint8_t * addr);
+void w5100ClassGetSubnetMask(W5100Class *w5100Class, uint8_t * addr);
+void w5100ClassSetMACAddress(W5100Class *w5100Class, const uint8_t * addr);
+void w5100ClassGetMACAddress(W5100Class *w5100Class, uint8_t * addr);
+void w5100ClassSetIPAddress(W5100Class *w5100Class, const uint8_t * addr);
+void w5100ClassGetIPAddress(W5100Class *w5100Class, uint8_t * addr);
+void w5100ClassSetRetransmissionTime(W5100Class *w5100Class, uint16_t timeout);
+void w5100ClassSetRetransmissionCount(W5100Class *w5100Class, uint8_t retry);
 void w5100ClassExecCmdSn(W5100Class *w5100Class, SOCKET s, SockCMD _cmd);
 uint16_t writeBuffer(W5100Class *w5100Class, uint16_t addr, const uint8_t *buf, uint16_t len);
 uint8_t writeByte(W5100Class *w5100Class, uint16_t addr, uint8_t data);
@@ -188,128 +184,8 @@ uint8_t getChip(W5100Class *w5100Class);
 uint16_t SBASE(W5100Class *w5100Class, uint8_t socknum);
 uint16_t RBASE(W5100Class *w5100Class, uint8_t socknum);
 
-/* Definitions and types for pins */
-/*
-typedef enum _EAnalogChannel
-{
-  NO_ADC=-1,
-  ADC0=0,
-  ADC1,
-  ADC2,
-  ADC3,
-  ADC4,
-  ADC5,
-  ADC6,
-  ADC7,
-  ADC8,
-  ADC9,
-  ADC10,
-  ADC11,
-  ADC12,
-  ADC13,
-  ADC14,
-  ADC15,
-  DA0,
-  DA1
-} EAnalogChannel;
-
-#define ADC_CHANNEL_NUMBER_NONE 0xffffffff
-
-// Definitions for PWM channels
-typedef enum _EPWMChannel
-{
-  NOT_ON_PWM=-1,
-  PWM_CH0=0,
-  PWM_CH1,
-  PWM_CH2,
-  PWM_CH3,
-  PWM_CH4,
-  PWM_CH5,
-  PWM_CH6,
-  PWM_CH7
-} EPWMChannel;
-
-// Definitions for TC channels
-typedef enum _ETCChannel
-{
-  NOT_ON_TIMER=-1,
-  TC0_CHA0=0,
-  TC0_CHB0,
-  TC0_CHA1,
-  TC0_CHB1,
-  TC0_CHA2,
-  TC0_CHB2,
-  TC1_CHA3,
-  TC1_CHB3,
-  TC1_CHA4,
-  TC1_CHB4,
-  TC1_CHA5,
-  TC1_CHB5,
-  TC2_CHA6,
-  TC2_CHB6,
-  TC2_CHA7,
-  TC2_CHB7,
-  TC2_CHA8,
-  TC2_CHB8
-} ETCChannel;
-
-typedef enum _EPioType
-{
-  PIO_NOT_A_PIN,
-  PIO_PERIPH_A,
-  PIO_PERIPH_B,
-  PIO_PERIPH_C,
-  PIO_PERIPH_D,
-  PIO_INPUT,
-  PIO_OUTPUT_0,
-  PIO_OUTPUT_1
-} EPioType ;
-
-typedef struct _PinDescription
-{
-  Pio* pPort ;
-  uint32_t ulPin ;
-  uint32_t ulPeripheralId ;
-  EPioType ulPinType ;
-  uint32_t ulPinConfiguration ;
-  uint32_t ulPinAttribute ;
-  EAnalogChannel ulAnalogChannel ;
-  EAnalogChannel ulADCChannelNumber ;
-  EPWMChannel ulPWMChannel ;
-  ETCChannel ulTCChannel ;
-} PinDescription ;
-*/
-PinDescription _g_APinDescription[];
-/*
-#define INPUT 0x0
-#define OUTPUT 0x1
-#define INPUT_PULLUP 0x2
-#define HIGH 0x1
-#define LOW 0x0
-#define digitalPinToPort(P) ( _g_APinDescription[P].pPort )
-#define digitalPinToBitMask(P) ( _g_APinDescription[P].ulPin )
-uint8_t g_pinStatus[];
-#define PIN_STATUS_DIGITAL_INPUT_PULLUP  (0x01)
-#define PIN_STATUS_DIGITAL_INPUT         (0x02)
-#define PIN_STATUS_DIGITAL_OUTPUT        (0x03)
-#define PIN_STATUS_ANALOG                (0x04)
-#define PIN_STATUS_PWM                   (0x05)
-#define PIN_STATUS_TIMER                 (0x06)
-#define PIN_STATUS_SERIAL                (0x07)
-#define PIN_STATUS_DW_LOW                (0x10)
-#define PIN_STATUS_DW_HIGH               (0x11)
-#define PIO_PULLUP  (1u << 0)
-/*
-#define PIO_DEFAULT (0u << 0)
-//#define ADC 0
-#define PIN_ATTR_COMBO         (1UL<<0)
-#define PIN_ATTR_ANALOG        (1UL<<1)
-#define PIN_ATTR_DIGITAL       (1UL<<2)
-#define PIN_ATTR_PWM           (1UL<<3)
-#define PIN_ATTR_TIMER         (1UL<<4)
-*/
-/*extern*/ void pinMode( uint32_t ulPin, uint32_t ulMode );
-
+extern PinDescription _g_APinDescription[];
+void pinMode( uint32_t ulPin, uint32_t ulMode );
 bool hasOffsetAddressMapping(void);
 void initSS(W5100Class *w5100Class);
 void setSS(W5100Class *w5100Class);

@@ -1,18 +1,7 @@
-#include "Ethernet.h"
-#include "utility/w5100.h"
-
-/*
-SPISettings * spiSettings;
-spiSettingsConstructor(spiSettings);
-#define SPI_ETHERNET_SETTINGS spiSettings
-
-W5100Class * w5100Class;
-SPIClass * spiClass;
-spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
-*/
+#include "socket.h"
 
 #if ARDUINO >= 156 && !defined(ARDUINO_ARCH_PIC32)
-/*extern*/ void yield(void);
+extern void yield(void);
 #else
 #define yield()
 #endif
@@ -36,13 +25,24 @@ void read_data(uint8_t s, uint16_t src, uint8_t *dst, uint16_t len);
 /*****************************************/
 /*          Socket management            */
 /*****************************************/
-void socketPortRand(struct EthernetClass *ethernetClass, uint16_t n)
+void delayMicroseconds(uint32_t usec){
+    if (usec == 0) return;
+    uint32_t n = usec * (VARIANT_MCK / 3000000);
+    __asm__ volatile(
+        "L_%=_delayMicroseconds:"       "\n\t"
+        "subs   %0, #1"                 "\n\t"
+        "bne    L_%=_delayMicroseconds" "\n"
+        : "+r" (n) :
+    );
+}
+
+void socketPortRand(uint16_t n)
 {
 	n &= 0x3FFF;
 	local_port ^= n;
 }
 
-uint8_t socketBegin(struct EthernetClass *ethernetClass, uint8_t protocol, uint16_t port)
+uint8_t socketBegin(uint8_t protocol, uint16_t port)
 {
 	uint8_t s, status[MAX_SOCK_NUM], chip, maxindex=MAX_SOCK_NUM;
 
@@ -95,7 +95,7 @@ makesocket:
 		if (++local_port < 49152) local_port = 49152;
 		writeSnPORT(w5100Class, s, local_port);
 	}
-	execCmdSn(w5100Class, s, Sock_OPEN);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_OPEN);
 	state[s].RX_RSR = 0;
 	state[s].RX_RD  = readSnRX_RD(w5100Class, s); // always zero?
 	state[s].RX_inc = 0;
@@ -106,7 +106,7 @@ makesocket:
 }
 
 // multicast version to set fields before open  thd
-uint8_t socketBeginMulticast(struct EthernetClass *ethernetClass, uint8_t protocol, struct IPAddress * ip, uint16_t port)
+uint8_t socketBeginMulticast(uint8_t protocol, struct IPAddress * ip, uint16_t port)
 {
 	uint8_t s, status[MAX_SOCK_NUM], chip, maxindex=MAX_SOCK_NUM;
 
@@ -145,7 +145,7 @@ uint8_t socketBeginMulticast(struct EthernetClass *ethernetClass, uint8_t protoc
 	return MAX_SOCK_NUM; // all sockets are in use
 closemakesocket:
 	//Serial.printf("W5000socket close\n");
-	execCmdSn(w5100Class, s, Sock_CLOSE);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_CLOSE);
 makesocket:
 	//Serial.printf("W5000socket %d\n", s);
 	//EthernetServer::server_port[s] = 0;
@@ -172,7 +172,7 @@ makesocket:
     	writeSnDIPR(w5100Class, s, addr);   //239.255.0.1
     	writeSnDPORT(w5100Class, s, port);
     	writeSnDHAR(w5100Class, s, mac);
-	execCmdSn(w5100Class, s, Sock_OPEN);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_OPEN);
 	state[s].RX_RSR = 0;
 	state[s].RX_RD  = readSnRX_RD(w5100Class, s); // always zero?
 	state[s].RX_inc = 0;
@@ -182,7 +182,7 @@ makesocket:
 }
 
 // Return the socket's status
-uint8_t socketStatus(struct EthernetClass *ethernetClass, uint8_t s)
+uint8_t socketStatus(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	uint8_t status = readSnSR(w5100Class, s);
@@ -192,42 +192,42 @@ uint8_t socketStatus(struct EthernetClass *ethernetClass, uint8_t s)
 
 // Immediately close.  If a TCP connection is established, the
 // remote host is left unaware we closed.
-void socketClose(struct EthernetClass *ethernetClass, uint8_t s)
+void socketClose(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-  execCmdSn(w5100Class, s, Sock_CLOSE);
+  w5100ClassExecCmdSn(w5100Class, s, Sock_CLOSE);
 	spiClassEndTransaction(spiClass);
 }
 
 // Place the socket in listening (server) mode
-uint8_t socketListen(struct EthernetClass *ethernetClass, uint8_t s)
+uint8_t socketListen(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	if (readSnSR(w5100Class, s) != SnSR_INIT) {
 		spiClassEndTransaction(spiClass);
 		return 0;
 	}
-	execCmdSn(w5100Class, s, Sock_LISTEN);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_LISTEN);
 	spiClassEndTransaction(spiClass);
 	return 1;
 }
 
 // establish a TCP connection in Active (client) mode.
-void socketConnect(struct EthernetClass *ethernetClass, uint8_t s, uint8_t * addr, uint16_t port)
+void socketConnect(uint8_t s, uint8_t * addr, uint16_t port)
 {
 	// set destination IP
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	writeSnDIPR(w5100Class, s, addr);
 	writeSnDPORT(w5100Class, s, port);
-	execCmdSn(w5100Class, s, Sock_CONNECT);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_CONNECT);
 	spiClassEndTransaction(spiClass);
 }
 
 // Gracefully disconnect a TCP connection.
-void socketDisconnect(struct EthernetClass *ethernetClass, uint8_t s)
+void socketDisconnect(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-  execCmdSn(w5100Class, s, Sock_DISCON);
+  w5100ClassExecCmdSn(w5100Class, s, Sock_DISCON);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -274,7 +274,7 @@ void read_data(uint8_t s, uint16_t src, uint8_t *dst, uint16_t len)
 }
 
 // Receive data.  Returns size, or -1 for no data, or 0 if connection closed
-int socketRecv(struct EthernetClass *ethernetClass, uint8_t s, uint8_t *buf, int16_t len)
+int socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 {
 	// Check how much data is available
 	int ret = state[s].RX_RSR;
@@ -308,7 +308,7 @@ int socketRecv(struct EthernetClass *ethernetClass, uint8_t s, uint8_t *buf, int
 		if (inc >= 250 || state[s].RX_RSR == 0) {
 			state[s].RX_inc = 0;
 		  writeSnRX_RD(w5100Class, s, ptr);
-			execCmdSn(w5100Class, s, Sock_RECV);
+			w5100ClassExecCmdSn(w5100Class, s, Sock_RECV);
 		} else {
 			state[s].RX_inc = inc;
 		}
@@ -317,7 +317,7 @@ int socketRecv(struct EthernetClass *ethernetClass, uint8_t s, uint8_t *buf, int
 	return ret;
 }
 
-uint16_t socketRecvAvailable(struct EthernetClass *ethernetClass, uint8_t s)
+uint16_t socketRecvAvailable(uint8_t s)
 {
 	uint16_t ret = state[s].RX_RSR;
 	if (ret == 0) {
@@ -331,7 +331,7 @@ uint16_t socketRecvAvailable(struct EthernetClass *ethernetClass, uint8_t s)
 }
 
 // get the first byte in the receive queue (no checking)
-uint8_t socketPeek(struct EthernetClass *ethernetClass, uint8_t s)
+uint8_t socketPeek(uint8_t s)
 {
 	uint8_t b;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
@@ -383,7 +383,7 @@ void write_data(uint8_t s, uint16_t data_offset, const uint8_t *data, uint16_t l
  * @brief	This function used to send the data in TCP mode
  * @return	1 for success else 0.
  */
-uint16_t socketSend(struct EthernetClass *ethernetClass, uint8_t s, const uint8_t * buf, uint16_t len)
+uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len)
 {
 	uint8_t status=0;
 	uint16_t ret=0;
@@ -410,7 +410,7 @@ uint16_t socketSend(struct EthernetClass *ethernetClass, uint8_t s, const uint8_
 	// copy data
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	write_data(s, 0, (uint8_t *)buf, ret);
-	execCmdSn(w5100Class, s, Sock_SEND);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_SEND);
 
 	while ((readSnIR(w5100Class, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
 		if (readSnSR(w5100Class, s) == SnSR_CLOSED ) {
@@ -427,7 +427,7 @@ uint16_t socketSend(struct EthernetClass *ethernetClass, uint8_t s, const uint8_
 	return ret;
 }
 
-uint16_t socketSendAvailable(struct EthernetClass *ethernetClass, uint8_t s)
+uint16_t socketSendAvailable(uint8_t s)
 {
 	uint8_t status=0;
 	uint16_t freesize=0;
@@ -441,7 +441,7 @@ uint16_t socketSendAvailable(struct EthernetClass *ethernetClass, uint8_t s)
 	return 0;
 }
 
-uint16_t socketBufferData(struct EthernetClass *ethernetClass, uint8_t s, uint16_t offset, const uint8_t* buf, uint16_t len)
+uint16_t socketBufferData(uint8_t s, uint16_t offset, const uint8_t* buf, uint16_t len)
 {
 	uint16_t ret =0;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
@@ -456,7 +456,7 @@ uint16_t socketBufferData(struct EthernetClass *ethernetClass, uint8_t s, uint16
 	return ret;
 }
 
-bool socketStartUDP(struct EthernetClass *ethernetClass, uint8_t s, uint8_t* addr, uint16_t port)
+bool socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port)
 {
 	if ( ((addr[0] == 0x00) && (addr[1] == 0x00) && (addr[2] == 0x00) && (addr[3] == 0x00)) ||
 	  ((port == 0x00)) ) {
@@ -469,10 +469,10 @@ bool socketStartUDP(struct EthernetClass *ethernetClass, uint8_t s, uint8_t* add
 	return true;
 }
 
-bool socketSendUDP(struct EthernetClass *ethernetClass, uint8_t s)
+bool socketSendUDP(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	execCmdSn(w5100Class, s, Sock_SEND);
+	w5100ClassExecCmdSn(w5100Class, s, Sock_SEND);
 
 	while ( (readSnIR(w5100Class, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
 		if (readSnIR(w5100Class, s) & SnIR_TIMEOUT) {

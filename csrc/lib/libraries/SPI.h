@@ -1,20 +1,11 @@
+//#pragma once
 #ifndef _SPI_H_INCLUDED
 #define _SPI_H_INCLUDED
-#include "inttypes.h"
+
+//#include "inttypes.h"
 #include "variant.h"
 #include <stdio.h>
-/*
-#ifndef _SAM3N_PIO_COMPONENT_
-#include "../Ethernet/utility/component_pio.h"
-#endif
-*/
-#ifndef utils_h
-#include "../cores/utils.h"
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdbool.h>
 
 #define SPI_HAS_TRANSACTION 1
 #define SPI_HAS_EXTENDED_CS_PIN_HANDLING 1
@@ -39,7 +30,8 @@ typedef struct _SPISettings {
 	BitOrder border;
 } SPISettings;
 
-SPISettings * spiSettings;
+extern SPISettings * spiSettings;
+#define SPI_ETHERNET_SETTINGS spiSettings
 
 int spiSettingsConstructorParams(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
 int spiSettingsConstructor(SPISettings * spiSettings);
@@ -55,6 +47,10 @@ int spiSettingsConstructor(SPISettings * spiSettings);
 
 void init_MightInline(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
 void inline init_AlwaysInline(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode);
+uint32_t __RBIT(uint32_t value);
+uint32_t __REV(uint32_t value);
+
+#define SPI_PCS(npcs)       ((~(1 << (npcs)) & 0xF) << 16)
 
 typedef struct {
   WoReg SPI_CR;        /**< \brief (Spi Offset: 0x00) Control Register */
@@ -85,8 +81,14 @@ typedef struct _SPIClass {
 	uint32_t interruptMask[4];
 } SPIClass;
 
-SPIClass * spiClass;
+extern SPIClass * spiClass;
 
+
+static volatile uint32_t _dwTickCount;
+uint32_t GetTickCount( void ) ;
+uint32_t millis( void ) ;
+void delay( uint32_t dwMs ) ;
+void spiClassConfigureNPCS( Spi *spi, uint32_t dwNpcs, uint32_t dwConfiguration );
 spiClassConstructor(SPIClass * spiClass, Spi *_spi, uint32_t _id/*, void(*_initCb)(void)*/);
 uint8_t spiClassTransfer(SPIClass * spiClass, uint8_t _pin, uint8_t _data, SPITransferMode _mode);
 uint16_t spiClassTransfer16(SPIClass * spiClass, uint8_t _pin, uint16_t _data, SPITransferMode _mode);
@@ -132,5 +134,35 @@ void spiClassInit(SPIClass * spiClass);
 #define SPI_SR_TDRE (0x1u << 1)
 #define SPI_SR_RDRF (0x1u << 0)
 #define SPI_TDR_LASTXFER (0x1u << 24)
+
+#define SPI_CR_SPIDIS (0x1u << 1)
+#define SPI_CR_SWRST  (0x1u << 7)
+#define SPI_CR_SPIEN (0x1u << 0)
+void SPI_Configure( Spi* spi, uint32_t dwId, uint32_t dwConfiguration ) ;
+void SPI_Enable( Spi* spi );
+void SPI_Disable( Spi* spi ) ;
+uint32_t pmc_enable_periph_clk(uint32_t ul_id);
+uint32_t pmc_disable_periph_clk(uint32_t ul_id);
+
+enum adc_channel_num_t {
+	ADC_CHANNEL_0  = 0,
+	ADC_CHANNEL_1  = 1,
+	ADC_CHANNEL_2  = 2,
+	ADC_CHANNEL_3  = 3,
+	ADC_CHANNEL_4  = 4,
+	ADC_CHANNEL_5  = 5,
+	ADC_CHANNEL_6  = 6,
+	ADC_CHANNEL_7  = 7,
+	ADC_CHANNEL_8  = 8,
+	ADC_CHANNEL_9  = 9,
+	ADC_CHANNEL_10 = 10,
+	ADC_CHANNEL_11 = 11,
+	ADC_CHANNEL_12 = 12,
+	ADC_CHANNEL_13 = 13,
+	ADC_CHANNEL_14 = 14,
+	ADC_TEMPERATURE_SENSOR = 15,
+} ;
+
+void adc_disable_channel(Adc *p_adc, const enum adc_channel_num_t adc_ch);
 
 #endif

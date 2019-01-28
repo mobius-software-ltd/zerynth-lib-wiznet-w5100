@@ -2,10 +2,7 @@
 #define IPAddress_h
 
 #include <stdint.h>
-#ifndef utils_h
-#include "../cores/utils.h"
-#endif
-// A class to make it easier to handle and pass around IP addresses
+#include <stdbool.h>
 
 struct IPAddress {
   union {
@@ -14,7 +11,7 @@ struct IPAddress {
   } _address;
 };
 
-struct IPAddress INADDR_NONE = {0,0,0,0};
+extern struct IPAddress INADDR_NONE;
 
 uint8_t* raw_address(struct IPAddress * ipAddress);
 // Constructors

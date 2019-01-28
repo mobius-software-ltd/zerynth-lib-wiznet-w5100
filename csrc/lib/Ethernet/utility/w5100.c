@@ -1,5 +1,6 @@
 #include "w5100.h"
 
+PinDescription _g_APinDescription[];
 /***************************************************/
 /**            Default SS pin setting             **/
 /***************************************************/
@@ -18,9 +19,6 @@
 #else
 #define SS_PIN_DEFAULT  10
 #endif
-
-//SPIClass * spiClass;
-//spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
 
 uint8_t w5100ClassInit(W5100Class * w5100) {
 	w5100 -> chip = 0;
@@ -42,21 +40,21 @@ uint8_t w5100ClassInit(W5100Class * w5100) {
 #ifdef ETHERNET_LARGE_BUFFERS
   #if MAX_SOCK_NUM <= 1
   		w5100->SSIZE = 8192;
-  		writeTMSR(0x03);
-  		writeRMSR(0x03);
+  		writeTMSR(w5100, 0x03);
+  		writeRMSR(w5100, 0x03);
   #elif MAX_SOCK_NUM <= 2
   		w5100->SSIZE = 4096;
-  		writeTMSR(0x0A);
-  		writeRMSR(0x0A);
+  		writeTMSR(w5100, 0x0A);
+  		writeRMSR(w5100, 0x0A);
   #else
   		w5100->SSIZE = 2048;
-  		writeTMSR(0x55);
-  		writeRMSR(0x55);
+  		writeTMSR(w5100, 0x55);
+  		writeRMSR(w5100, 0x55);
   #endif
   		w5100->SMASK = SSIZE - 1;
 #else
-		writeTMSR(0x55);
-		writeRMSR(0x55);
+		writeTMSR(w5100, 0x55);
+		writeRMSR(w5100, 0x55);
 #endif
 
 	spiClassEndTransaction(spiClass);
@@ -64,16 +62,16 @@ uint8_t w5100ClassInit(W5100Class * w5100) {
 	return 1; // successful init
 }
 
-inline void w5100ClassSetGatewayIp(W5100Class *w5100Class, const uint8_t * addr) { writeGAR(addr);}
-inline void w5100ClassGetGatewayIp(W5100Class *w5100Class, uint8_t * addr) { readGAR(addr); }
-inline void w5100ClassSetSubnetMask(W5100Class *w5100Class, const uint8_t * addr) { writeSUBR(addr); }
-inline void w5100ClassGetSubnetMask(W5100Class *w5100Class, uint8_t * addr) { readSUBR(addr); }
-inline void w5100ClassSetMACAddress(W5100Class *w5100Class, const uint8_t * addr) { writeSHAR(addr); }
-inline void w5100ClassGetMACAddress(W5100Class *w5100Class, uint8_t * addr) { readSHAR(addr); }
-inline void w5100ClassSetIPAddress(W5100Class *w5100Class, const uint8_t * addr) { writeSIPR(addr); }
-inline void w5100ClassGetIPAddress(W5100Class *w5100Class, uint8_t * addr) { readSIPR(addr); }
-inline void w5100ClassSetRetransmissionTime(W5100Class *w5100Class, uint16_t timeout) { writeRTR(timeout); }
-inline void w5100ClassSetRetransmissionCount(W5100Class *w5100Class, uint8_t retry) { writeRCR(retry); }
+void w5100ClassSetGatewayIp(W5100Class *w5100Class, const uint8_t * addr) { writeGAR(w5100Class, addr);}
+void w5100ClassGetGatewayIp(W5100Class *w5100Class, uint8_t * addr) { readGAR(w5100Class, addr); }
+void w5100ClassSetSubnetMask(W5100Class *w5100Class, const uint8_t * addr) { writeSUBR(w5100Class, addr); }
+void w5100ClassGetSubnetMask(W5100Class *w5100Class, uint8_t * addr) { readSUBR(w5100Class, addr); }
+void w5100ClassSetMACAddress(W5100Class *w5100Class, const uint8_t * addr) { writeSHAR(w5100Class, addr); }
+void w5100ClassGetMACAddress(W5100Class *w5100Class, uint8_t * addr) { readSHAR(w5100Class, addr); }
+void w5100ClassSetIPAddress(W5100Class *w5100Class, const uint8_t * addr) { writeSIPR(w5100Class, addr); }
+void w5100ClassGetIPAddress(W5100Class *w5100Class, uint8_t * addr) { readSIPR(w5100Class, addr); }
+void w5100ClassSetRetransmissionTime(W5100Class *w5100Class, uint16_t timeout) { writeRTR(w5100Class, timeout); }
+void w5100ClassSetRetransmissionCount(W5100Class *w5100Class, uint8_t retry) { writeRCR(w5100Class, retry); }
 
 // Soft reset the Wiznet chip, by writing to its MR register reset bit
 uint8_t softReset(W5100Class *w5100Class)
@@ -81,10 +79,10 @@ uint8_t softReset(W5100Class *w5100Class)
 	uint16_t count=0;
 
 	// write to reset bit
-	writeMR(0x80);
+	writeMR(w5100Class, 0x80);
 	// then wait for soft reset to complete
 	do {
-		uint8_t mr = readMR();
+		uint8_t mr = readMR(w5100Class);
 		if (mr == 0) return 1;
 		delay(1);
 	} while (++count < 20);
@@ -95,12 +93,12 @@ uint8_t isW5100(W5100Class *w5100Class)
 {
 	w5100Class->chip = 51;
 	if (!softReset(w5100Class)) return 0;
-	writeMR(0x10);
-	if (readMR() != 0x10) return 0;
-	writeMR(0x12);
-	if (readMR() != 0x12) return 0;
-	writeMR(0x00);
-	if (readMR() != 0x00) return 0;
+	writeMR(w5100Class, 0x10);
+	if (readMR(w5100Class) != 0x10) return 0;
+	writeMR(w5100Class, 0x12);
+	if (readMR(w5100Class) != 0x12) return 0;
+	writeMR(w5100Class, 0x00);
+	if (readMR(w5100Class) != 0x00) return 0;
 	return 1;
 }
 
@@ -228,10 +226,10 @@ void readUIPR(W5100Class *w5100Class, uint8_t *_buff) { return readBuffer(w5100C
 
 uint16_t getCH_BASE(W5100Class *w5100Class) { return w5100Class->CH_BASE_MSB << 8;}
 
-uint8_t readSn(W5100Class *w5100Class, SOCKET s, uint16_t addr) { return read(CH_BASE(w5100Class) + s * CH_SIZE + addr);}
-uint8_t writeSn(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t data) { return write(CH_BASE(w5100Class) + s * CH_SIZE + addr, data);}
-uint16_t readSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return read(CH_BASE(w5100Class) + s * CH_SIZE + addr, buf, len);}
-uint16_t writeSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return write(CH_BASE(w5100Class) + s * CH_SIZE + addr, buf, len);}
+uint8_t readSn(W5100Class *w5100Class, SOCKET s, uint16_t addr) { return readByte(w5100Class, getCH_BASE(w5100Class) + s * CH_SIZE + addr);}
+uint8_t writeSn(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t data) { return writeByte(w5100Class, getCH_BASE(w5100Class) + s * CH_SIZE + addr, data);}
+uint16_t readSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return readBuffer(w5100Class, getCH_BASE(w5100Class) + s * CH_SIZE + addr, buf, len);}
+uint16_t writeSnBuffer(W5100Class *w5100Class, SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return writeBuffer(w5100Class, getCH_BASE(w5100Class) + s * CH_SIZE + addr, buf, len);}
 
 // Mode
 void writeSnMR(W5100Class *w5100Class, SOCKET _s, uint8_t _data) { writeSn(w5100Class, _s, 0x0000, _data);}
@@ -303,7 +301,7 @@ uint16_t readSnTX_FSR(W5100Class *w5100Class, SOCKET _s) {
   readSnBuffer(w5100Class, _s, 0x0020, buf, 2);
   return (buf[0] << 8) | buf[1];
 }
-/ TX Write Pointer
+// TX Write Pointer
 void writeSnTX_WR(W5100Class *w5100Class, SOCKET _s, uint16_t _data) {
   uint8_t buf[2];
   buf[0] = _data >> 8;
@@ -358,10 +356,10 @@ uint16_t readSnDHAR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff) { return r
 uint16_t writeSnDIPR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff) { return writeSnBuffer(w5100Class, _s, 0x000C, _buff, 4);}
 uint16_t readSnDIPR(W5100Class *w5100Class,SOCKET _s, uint8_t *_buff) { return readSnBuffer(w5100Class, _s, 0x000C, _buff, 4);}
 
-uint8_t getChip(W5100Class *w5100Class) { return w5100Class -> chip; }
+uint8_t getChip(W5100Class *w5100Class) { return w5100Class->chip; }
 
 uint16_t SBASE(W5100Class *w5100Class, uint8_t socknum) {
-  if (w5100Class -> chip == 51) {
+  if (w5100Class->chip == 51) {
     return socknum * w5100Class->SSIZE + 0x4000;
   } else {
     return socknum * w5100Class->SSIZE + 0x8000;
@@ -444,12 +442,12 @@ uint16_t RBASE(W5100Class *w5100Class, uint8_t socknum) {
 
 bool hasOffsetAddressMapping(void) { return false;}
 void initSS(W5100Class *w5100Class) {
-		w5100Class -> ss_pin_reg = &(digitalPinToPort(w5100Class -> ss_pin)->PIO_PER);
-		w5100Class -> ss_pin_mask = digitalPinToBitMask(w5100Class -> ss_pin);
-		pinMode(w5100Class -> ss_pin, OUTPUT);
+		w5100Class->ss_pin_reg = &(digitalPinToPort(w5100Class->ss_pin)->PIO_PER);
+		w5100Class->ss_pin_mask = digitalPinToBitMask(w5100Class->ss_pin);
+		pinMode(w5100Class->ss_pin, OUTPUT);
 }
-void setSS(W5100Class *w5100Class) {*(w5100Class -> ss_pin_reg+13) = w5100Class -> ss_pin_mask;}
-void resetSS(W5100Class *w5100Class) {*(w5100Class -> ss_pin_reg+12) = w5100Class -> ss_pin_mask;}
+void setSS(W5100Class *w5100Class) {*(w5100Class->ss_pin_reg+13) = w5100Class->ss_pin_mask;}
+void resetSS(W5100Class *w5100Class) {*(w5100Class->ss_pin_reg+12) = w5100Class->ss_pin_mask;}
 
 void w5100ClassExecCmdSn(W5100Class *w5100Class, SOCKET s, SockCMD _cmd)
 {

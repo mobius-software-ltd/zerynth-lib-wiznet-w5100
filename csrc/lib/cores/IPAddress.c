@@ -1,6 +1,6 @@
 #include "IPAddress.h"
 
-//struct IPAddress INADDR_NONE = {0,0,0,0}
+struct IPAddress INADDR_NONE = {0,0,0,0};
 
 uint8_t* raw_address(struct IPAddress * ipAddress)
 {

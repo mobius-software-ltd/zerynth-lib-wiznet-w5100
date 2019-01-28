@@ -1,11 +1,9 @@
 #ifndef Stream_h
 #define Stream_h
+
 #include "inttypes.h"
 #include <stdio.h>
-
-#ifndef utils_h
-#include "../cores/utils.h"
-#endif
+#include <stdbool.h>
 
 typedef enum{
     SKIP_ALL,
@@ -13,8 +11,7 @@ typedef enum{
     SKIP_WHITESPACE
 }LookaheadMode;
 
-
-#define NO_IGNORE_CHAR  '\x01' // a char not found in a valid ASCII numeric field
+#define NO_IGNORE_CHAR  '\x01'
 
 typedef struct _MultiTarget {
   const char *str;
@@ -22,7 +19,7 @@ typedef struct _MultiTarget {
   size_t index;
 } MultiTarget;
 
-//MultiTarget * multiTarget;
+//extern MultiTarget * multiTarget;
 
 typedef struct Stream Stream;
 struct Stream {
@@ -47,7 +44,7 @@ long streamParseInt(struct Stream *stream, LookaheadMode lookahead, char ignore)
 float streamParseFloat(struct Stream *stream, LookaheadMode lookahead, char ignore);
 size_t readBytes(struct Stream *stream, char *buffer, size_t length);
 size_t readBytesUntil(struct Stream *stream, char terminator, char *buffer, size_t length);
-//int findMulti(struct Stream *stream, struct MultiTarget *targets, int tCount);
+int streamFindMulti(struct Stream *stream, MultiTarget *targets, int tCount);
 
 #undef NO_IGNORE_CHAR
 #endif

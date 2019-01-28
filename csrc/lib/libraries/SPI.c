@@ -1,5 +1,24 @@
 #include "SPI.h"
 
+#if ARDUINO >= 156 && !defined(ARDUINO_ARCH_PIC32)
+extern void yield(void);
+#else
+#define yield()
+#endif
+
+inline void __enable_irq(void)
+{
+  __asm__ volatile ("cpsie i");
+}
+inline void __disable_irq(void)
+{
+  __asm__ volatile ("cpsid i");
+}
+static volatile uint32_t _dwTickCount=0;
+
+SPIClass * spiClass;
+SPISettings * spiSettings;
+
 void SPI_0_Init(void) {
 	PIO_Configure(
 			g_APinDescription[PIN_SPI_MOSI].pPort,
@@ -16,6 +35,11 @@ void SPI_0_Init(void) {
 			g_APinDescription[PIN_SPI_SCK].ulPinType,
 			g_APinDescription[PIN_SPI_SCK].ulPin,
 			g_APinDescription[PIN_SPI_SCK].ulPinConfiguration);
+}
+
+void adc_disable_channel(Adc *p_adc, const enum adc_channel_num_t adc_ch)
+{
+	p_adc->ADC_CHDR = 1 << adc_ch;
 }
 
 void init_MightInline(SPISettings * spiSettings, uint32_t clock, BitOrder bitOrder, uint8_t dataMode) {
@@ -60,9 +84,9 @@ void spiClassBeginNoPin(SPIClass * spiClass) {
 	spiClassInit(spiClass);
 	// NPCS control is left to the user
 	// Default speed set to 4Mhz
-	setClockDivider(BOARD_SPI_DEFAULT_SS, 21);
-	setDataMode(BOARD_SPI_DEFAULT_SS, SPI_MODE0);
-	setBitOrder(BOARD_SPI_DEFAULT_SS, MSBFIRST);
+	spiClassSetClockDivider(spiClass, BOARD_SPI_DEFAULT_SS, 21);
+	spiClassSetDataMode(spiClass, BOARD_SPI_DEFAULT_SS, SPI_MODE0);
+	spiClassSetBitOrder(spiClass, BOARD_SPI_DEFAULT_SS, MSBFIRST);
 }
 
 void spiClassBegin(SPIClass * spiClass, uint8_t _pin) {
@@ -76,9 +100,69 @@ void spiClassBegin(SPIClass * spiClass, uint8_t _pin) {
 		g_APinDescription[spiPin].ulPinConfiguration);
 
 	// Default speed set to 4Mhz
-	setClockDivider(_pin, 21);
-	setDataMode(_pin, SPI_MODE0);
-	setBitOrder(_pin, MSBFIRST);
+	spiClassSetClockDivider(spiClass, _pin, 21);
+	spiClassSetDataMode(spiClass, _pin, SPI_MODE0);
+	spiClassSetBitOrder(spiClass, _pin, MSBFIRST);
+}
+
+uint32_t pmc_enable_periph_clk(uint32_t ul_id)
+{
+	if (ul_id > MAX_PERIPH_ID) {
+		return 1;
+	}
+
+	if (ul_id < 32) {
+		if ((PMC->PMC_PCSR0 & (1u << ul_id)) != (1u << ul_id)) {
+			PMC->PMC_PCER0 = 1 << ul_id;
+		}
+#if (SAM3S_SERIES || SAM3XA_SERIES || SAM4S_SERIES)
+	} else {
+		ul_id -= 32;
+		if ((PMC->PMC_PCSR1 & (1u << ul_id)) != (1u << ul_id)) {
+			PMC->PMC_PCER1 = 1 << ul_id;
+		}
+#endif
+	}
+
+	return 0;
+}
+
+uint32_t pmc_disable_periph_clk(uint32_t ul_id)
+{
+	if (ul_id > MAX_PERIPH_ID) {
+		return 1;
+	}
+
+	if (ul_id < 32) {
+		if ((PMC->PMC_PCSR0 & (1u << ul_id)) == (1u << ul_id)) {
+			PMC->PMC_PCDR0 = 1 << ul_id;
+		}
+#if (SAM3S_SERIES || SAM3XA_SERIES || SAM4S_SERIES)
+	} else {
+		ul_id -= 32;
+		if ((PMC->PMC_PCSR1 & (1u << ul_id)) == (1u << ul_id)) {
+			PMC->PMC_PCDR1 = 1 << ul_id;
+		}
+#endif
+	}
+	return 0;
+}
+
+
+void SPI_Configure( Spi* spi, uint32_t dwId, uint32_t dwConfiguration )
+{
+    pmc_enable_periph_clk( dwId ) ;
+    spi->SPI_CR = SPI_CR_SPIDIS ;
+
+    /* Execute a software reset of the SPI twice */
+    spi->SPI_CR = SPI_CR_SWRST ;
+    spi->SPI_CR = SPI_CR_SWRST ;
+    spi->SPI_MR = dwConfiguration ;
+}
+
+void SPI_Enable( Spi* spi )
+{
+    spi->SPI_CR = SPI_CR_SPIEN ;
 }
 
 void spiClassInit(SPIClass * spiClass) {
@@ -141,6 +225,32 @@ void spiClassUsingInterrupt(SPIClass * spiClass, uint8_t interruptNumber)
 	if (irestore) interrupts();
 }
 
+void spiClassConfigureNPCS( Spi *spi, uint32_t dwNpcs, uint32_t dwConfiguration )
+{
+    spi->SPI_CSR[dwNpcs] = dwConfiguration ;
+}
+
+extern uint32_t GetTickCount( void )
+{
+    return _dwTickCount ;
+}
+
+uint32_t millis( void )
+{
+// todo: ensure no interrupts
+    return GetTickCount() ;
+}
+
+void delay( uint32_t ms )
+{
+    if (ms == 0)
+        return;
+    uint32_t start = GetTickCount();
+    do {
+        yield();
+    } while (GetTickCount() - start < ms);
+}
+
 void spiClassBeginTransactionNoPin(SPIClass * spiClass, SPISettings * settings) { spiClassBeginTransaction(spiClass, BOARD_SPI_DEFAULT_SS, settings); }
 
 void spiClassBeginTransaction(SPIClass * spiClass, uint8_t pin, SPISettings * settings)
@@ -159,7 +269,7 @@ void spiClassBeginTransaction(SPIClass * spiClass, uint8_t pin, SPISettings * se
 	}
 	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(pin);
 	spiClass -> bitOrder[ch] = settings->border;
-	SPI_ConfigureNPCS(spiClass -> spi, ch, settings->config);
+	spiClassConfigureNPCS(spiClass -> spi, ch, settings->config);
 }
 
 void spiClassEndTransaction(SPIClass * spiClass)
@@ -183,6 +293,11 @@ void spiClassEnd(SPIClass * spiClass, uint8_t _pin) {
 	pinMode(spiPin, INPUT);
 }
 
+void SPI_Disable( Spi* spi )
+{
+    spi->SPI_CR = SPI_CR_SPIDIS ;
+}
+
 void spiClassEndNoPin(SPIClass * spiClass) {
 	SPI_Disable(spiClass -> spi);
 	spiClass -> initialized = false;
@@ -198,7 +313,7 @@ void spiClassSetDataMode(SPIClass * spiClass, uint8_t _pin, uint8_t _mode) {
 	spiClass -> mode[ch] = _mode | SPI_CSR_CSAAT;
 	// SPI_CSR_DLYBCT(1) keeps CS enabled for 32 MCLK after a completed
 	// transfer. Some device needs that for working properly.
-	SPI_ConfigureNPCS(spiClass -> spi, ch, spiClass ->mode[ch] | SPI_CSR_SCBR(spiClass -> divider[ch]) | SPI_CSR_DLYBCT(1));
+	spiClassConfigureNPCS(spiClass -> spi, ch, spiClass ->mode[ch] | SPI_CSR_SCBR(spiClass -> divider[ch]) | SPI_CSR_DLYBCT(1));
 }
 
 void spiClassSetClockDivider(SPIClass * spiClass, uint8_t _pin, uint8_t _divider) {
@@ -206,13 +321,29 @@ void spiClassSetClockDivider(SPIClass * spiClass, uint8_t _pin, uint8_t _divider
 	spiClass -> divider[ch] = _divider;
 	// SPI_CSR_DLYBCT(1) keeps CS enabled for 32 MCLK after a completed
 	// transfer. Some device needs that for working properly.
-	SPI_ConfigureNPCS(spiClass -> spi, ch, spiClass -> mode[ch] | SPI_CSR_SCBR(spiClass -> divider[ch]) | SPI_CSR_DLYBCT(1));
+	spiClassConfigureNPCS(spiClass -> spi, ch, spiClass -> mode[ch] | SPI_CSR_SCBR(spiClass -> divider[ch]) | SPI_CSR_DLYBCT(1));
 }
 
 // These methods sets the same parameters but on default pin BOARD_SPI_DEFAULT_SS
 void spiClassSetBitOrderNoPin(SPIClass * spiClass, BitOrder _order) { spiClassSetBitOrder(spiClass, BOARD_SPI_DEFAULT_SS, _order); }
 void spiClassSetDataModeNoPin(SPIClass * spiClass, uint8_t _mode) { spiClassSetDataMode(spiClass, BOARD_SPI_DEFAULT_SS, _mode); }
 void spiClassSetClockDividerNoPin(SPIClass * spiClass, uint8_t _div) { spiClassSetClockDivider(spiClass, BOARD_SPI_DEFAULT_SS, _div); }
+
+uint32_t __RBIT(uint32_t value)
+{
+  uint32_t result;
+
+   __asm__ volatile ("rbit %0, %1" : "=r" (result) : "r" (value) );
+   return(result);
+}
+
+uint32_t __REV(uint32_t value)
+{
+  uint32_t result;
+
+  __asm__ volatile ("rev %0, %1" : "=r" (result) : "r" (value) );
+  return(result);
+}
 
 uint8_t spiClassTransfer(SPIClass * spiClass, uint8_t _pin, uint8_t _data, SPITransferMode _mode) {
 	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(_pin);

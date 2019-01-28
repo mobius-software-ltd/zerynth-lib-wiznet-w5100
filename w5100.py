@@ -7,36 +7,13 @@ This module implements the Zerynth driver for the Wiznet W5100 Ethernet (`Resour
 This module supports SSL/TLS
 """
 
-"""
 @native_c("_w5100_init",["csrc/w5100_ifc.c",
-                         "csrc/lib/Ethernet/Ethernet.c",
-                         "csrc/lib/Ethernet/EthernetUdp.c",
-                         "csrc/lib/Ethernet/EthernetClient.c",
-                         "csrc/lib/Ethernet/Dhcp.c",
-                         "csrc/lib/Ethernet/Dns.c",
-                         "csrc/lib/Ethernet/socket.c",
-                         "csrc/lib/Ethernet/utility/w5100.c",
-                         "csrc/lib/cores/Client.c",
-                         "csrc/lib/cores/IPAddress.c",
-                         "csrc/lib/cores/Stream.c",
-                         "csrc/lib/cores/Udp.c",
-                         "csrc/lib/libraries/variant.c",
-                         "csrc/lib/libraries/SPI.c"]
+                        "csrc/lib/libraries/*",
+                        "csrc/lib/cores/*",
+                        "csrc/lib/Ethernet/utility/*",
+                         "csrc/lib/Ethernet/*"]
                          ,[],[
-                         "-I.../csrc/lib/Ethernet/",
-                         "-I.../csrc/lib/cores/",
-                         "-I.../csrc/lib/libraries/"
-                         ])
-@native_c("_w5100_init",["csrc/w5100_ifc.c"],["DHCP","MAC={0x00,0x08,0xdc,0x78,0x91,0x71}"],[])
-"""
-@native_c("_w5100_init",["csrc/w5100_ifc.c",
-                         "csrc/lib/Ethernet/*",
-                         "csrc/lib/cores/*",
-                         "csrc/lib/libraries/*"]
-                         ,[],[
-                         "-I.../csrc/lib/Ethernet/",
-                         "-I.../csrc/lib/cores/",
-                         "-I.../csrc/lib/libraries/"
+                         "-I.../csrc/lib/Ethernet/"
                          ])
 def _hwinit():
     pass
@@ -61,11 +38,11 @@ def is_linked():
 @native_c("w5100_eth_unlink",["csrc/*"])
 def unlink():
     pass
-
+"""
 @native_c("w5100_net_link_info",[])
 def link_info():
     pass
-"""
+
 @native_c("w5100_net_set_link_info",[])
 def set_link_info(ip,mask,gw,dns):
     pass
