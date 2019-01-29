@@ -26,28 +26,27 @@ typedef struct EthernetClass {
 extern EthernetClass *ethernetClass;
 
 uint32_t micros( void );
-int begin(struct EthernetClass *ethernetClass, uint8_t *mac, unsigned long timeout, unsigned long responseTimeout);
-int maintain(struct EthernetClass *ethernetClass);
-EthernetLinkStatus linkStatus(struct EthernetClass *ethernetClass);
-EthernetHardwareStatus hardwareStatus(struct EthernetClass *ethernetClass);
-void beginIP(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress * ip);
-void beginDNS(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress * ip, struct IPAddress *dns);
-void beginGW(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress *ip, struct IPAddress* dns, struct IPAddress *gateway);
-void beginSN(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress *ip, struct IPAddress *dns, struct IPAddress *gateway, struct IPAddress *subnet);
-void ethernetClassInit(struct EthernetClass *ethernetClass, uint8_t sspin);
-void MACAddress(struct EthernetClass *ethernetClass, uint8_t *mac_address);
-struct IPAddress * localIP(struct EthernetClass *ethernetClass);
-struct IPAddress * subnetMask(struct EthernetClass *ethernetClass);
-struct IPAddress * gatewayIP(struct EthernetClass *ethernetClass);
-struct IPAddress * dnsServerIP(struct EthernetClass *ethernetClass);
-void setMACAddress(struct EthernetClass *ethernetClass, const uint8_t *mac_address);
-void setLocalIP(struct EthernetClass *ethernetClass, struct IPAddress * local_ip);
-void setSubnetMask(struct EthernetClass *ethernetClass, struct IPAddress * subnet);
-void setGatewayIP(struct EthernetClass *ethernetClass, struct IPAddress  * gateway);
-void setDnsServerIP(struct EthernetClass *ethernetClass, struct IPAddress * dns_server);
-void setRetransmissionTimeout(struct EthernetClass *ethernetClass, uint16_t milliseconds);
-void setRetransmissionCount(struct EthernetClass *ethernetClass, uint8_t num);
-
+int begin(EthernetClass *ethernetClass, uint8_t *mac, unsigned long timeout, unsigned long responseTimeout);
+int maintain( EthernetClass *ethernetClass);
+EthernetLinkStatus linkStatus(EthernetClass *ethernetClass);
+EthernetHardwareStatus hardwareStatus(EthernetClass *ethernetClass);
+void beginIP(EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress * ip);
+void beginDNS(EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress * ip, struct IPAddress *dns);
+void beginGW(EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress *ip, struct IPAddress* dns, struct IPAddress *gateway);
+void beginSN(EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress *ip, struct IPAddress *dns, struct IPAddress *gateway, struct IPAddress *subnet);
+void ethernetClassInit(EthernetClass *ethernetClass, uint8_t sspin);
+void MACAddress(EthernetClass *ethernetClass, uint8_t *mac_address);
+struct IPAddress * localIP(EthernetClass *ethernetClass);
+struct IPAddress * subnetMask(EthernetClass *ethernetClass);
+struct IPAddress * gatewayIP(EthernetClass *ethernetClass);
+struct IPAddress * dnsServerIP(EthernetClass *ethernetClass);
+void setMACAddress(EthernetClass *ethernetClass, const uint8_t *mac_address);
+void setLocalIP(EthernetClass *ethernetClass, struct IPAddress * local_ip);
+void setSubnetMask(EthernetClass *ethernetClass, struct IPAddress * subnet);
+void setGatewayIP(EthernetClass *ethernetClass, struct IPAddress  * gateway);
+void setDnsServerIP(EthernetClass *ethernetClass, struct IPAddress * dns_server);
+void setRetransmissionTimeout(EthernetClass *ethernetClass, uint16_t milliseconds);
+void setRetransmissionCount(EthernetClass *ethernetClass, uint8_t num);
 
 /*____________EthernetClient_______________________*/
 typedef struct EthernetClient EthernetClient;

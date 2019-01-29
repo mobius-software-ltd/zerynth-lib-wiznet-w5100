@@ -31,13 +31,13 @@ int begin(struct EthernetClass *ethernetClass, uint8_t *mac, unsigned long timeo
 	ethernetClass->_dhcp = &s_dhcp;
 
 	// Initialise the basic info
-	if (w5100ClassInit(w5100Class) == 0) return 0;
+	if (w5100ClassInit(w5100Clazz) == 0) return 0;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassSetMACAddress(w5100Class, mac);
+	w5100ClassSetMACAddress(w5100Clazz, mac);
 
 	struct IPAddress * addr = {0,0,0,0};
 	uint8_t* addrInt = raw_address(addr);
-	w5100ClassSetIPAddress(w5100Class, addrInt);
+	w5100ClassSetIPAddress(w5100Clazz, addrInt);
 	spiClassEndTransaction(spiClass);
 
 	// Now try to get our config info from a DHCP server
@@ -46,10 +46,10 @@ int begin(struct EthernetClass *ethernetClass, uint8_t *mac, unsigned long timeo
 		// We've successfully found a DHCP server and got our configuration
 		// info, so set things accordingly
 		spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-		w5100ClassSetIPAddress(w5100Class, raw_address(getLocalIp(ethernetClass->_dhcp)));
-		w5100ClassSetIPAddress(w5100Class, raw_address(getGatewayIp(ethernetClass->_dhcp)));
-		w5100ClassSetIPAddress(w5100Class, raw_address(getSubnetMask(ethernetClass->_dhcp)));
-		spiClassEndTransaction(spiClass);
+		w5100ClassSetIPAddress(w5100Clazz, raw_address(getLocalIp(ethernetClass->_dhcp)));
+		w5100ClassSetIPAddress(w5100Clazz, raw_address(getGatewayIp(ethernetClass->_dhcp)));
+		w5100ClassSetIPAddress(w5100Clazz, raw_address(getSubnetMask(ethernetClass->_dhcp)));
+    spiClassEndTransaction(spiClass);
 		ethernetClass->_dnsServerAddress = getDnsServerIp(ethernetClass->_dhcp);
 		socketPortRand(micros());
 	}
@@ -82,16 +82,16 @@ void beginGW(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress
 
 void beginSN(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress *ip, struct IPAddress *dns, struct IPAddress *gateway, struct IPAddress *subnet)
 {
-	if (w5100ClassInit(w5100Class) == 0) return 0;
+	//if (w5100ClassInit(w5100Clazz) == 0) return 0;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassSetMACAddress(w5100Class, mac);
+	w5100ClassSetMACAddress(w5100Clazz, mac);
 
 	uint8_t* addr = raw_address(ip);
-	w5100ClassSetIPAddress(w5100Class, addr);
+	w5100ClassSetIPAddress(w5100Clazz, addr);
 	addr = raw_address(gateway);
-	w5100ClassSetGatewayIp(w5100Class, addr);
+	w5100ClassSetGatewayIp(w5100Clazz, addr);
 	addr = raw_address(subnet);
-	w5100ClassSetSubnetMask(w5100Class, addr);
+	w5100ClassSetSubnetMask(w5100Clazz, addr);
 
 	spiClassEndTransaction(spiClass);
 	ethernetClass->_dnsServerAddress = dns;
@@ -99,13 +99,13 @@ void beginSN(struct EthernetClass *ethernetClass, uint8_t *mac, struct IPAddress
 
 void ethernetClassInit(struct EthernetClass *ethernetClass, uint8_t sspin)
 {
-	w5100Class->ss_pin = sspin;
-	setSS(w5100Class);
+	w5100Clazz->ss_pin = sspin;
+	setSS(w5100Clazz);
 }
 
 EthernetLinkStatus linkStatus(struct EthernetClass *ethernetClass)
 {
-	switch (getLinkStatus(w5100Class)) {
+	switch (getLinkStatus(w5100Clazz)) {
 		case UNKNOWN:  return Unknown;
 		case LINK_ON:  return LinkON;
 		case LINK_OFF: return LinkOFF;
@@ -115,7 +115,7 @@ EthernetLinkStatus linkStatus(struct EthernetClass *ethernetClass)
 
 EthernetHardwareStatus hardwareStatus(struct EthernetClass *ethernetClass)
 {
-	switch (getChip(w5100Class)) {
+	switch (getChip(w5100Clazz)) {
 		case 51: return EthernetW5100;
 		default: return EthernetNoHardware;
 	}
@@ -135,9 +135,9 @@ int maintain(struct EthernetClass *ethernetClass)
 		case DHCP_CHECK_REBIND_OK:
 			//we might have got a new IP.
 			spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-			w5100ClassSetIPAddress(w5100Class, raw_address(getLocalIp(ethernetClass->_dhcp)));
-			w5100ClassSetIPAddress(w5100Class, raw_address(getGatewayIp(ethernetClass->_dhcp)));
-			w5100ClassSetIPAddress(w5100Class, raw_address(getSubnetMask(ethernetClass->_dhcp)));
+			w5100ClassSetIPAddress(w5100Clazz, raw_address(getLocalIp(ethernetClass->_dhcp)));
+			w5100ClassSetIPAddress(w5100Clazz, raw_address(getGatewayIp(ethernetClass->_dhcp)));
+			w5100ClassSetIPAddress(w5100Clazz, raw_address(getSubnetMask(ethernetClass->_dhcp)));
 			spiClassEndTransaction(spiClass);
 			ethernetClass->_dnsServerAddress = getDnsServerIp(ethernetClass->_dhcp);
 			break;
@@ -152,7 +152,7 @@ int maintain(struct EthernetClass *ethernetClass)
 void MACAddress(struct EthernetClass *ethernetClass, uint8_t *mac_address)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassGetMACAddress(w5100Class, mac_address);
+	w5100ClassGetMACAddress(w5100Clazz, mac_address);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -161,7 +161,7 @@ struct IPAddress * localIP(struct EthernetClass *ethernetClass)
 	struct IPAddress * ret;
 	uint8_t* addr = raw_address(ret);
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassGetIPAddress(w5100Class, addr);
+	w5100ClassGetIPAddress(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 	return ret;
 }
@@ -171,7 +171,7 @@ struct IPAddress * subnetMaskMeth(struct EthernetClass *ethernetClass)
 	struct IPAddress * ret;
 	uint8_t* addr = raw_address(ret);
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassGetSubnetMask(w5100Class, addr);
+	w5100ClassGetSubnetMask(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 	return ret;
 }
@@ -181,7 +181,7 @@ struct IPAddress * gatewayIP(struct EthernetClass *ethernetClass)
 	struct IPAddress * ret;
 	uint8_t* addr = raw_address(ret);
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassGetGatewayIp(w5100Class, addr);
+	w5100ClassGetGatewayIp(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 	return ret;
 }
@@ -191,7 +191,7 @@ struct IPAddress * dnsServerIP(struct EthernetClass *ethernetClass) { return eth
 void setMACAddress(struct EthernetClass *ethernetClass, const uint8_t *mac_address)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassSetMACAddress(w5100Class, mac_address);
+	w5100ClassSetMACAddress(w5100Clazz, mac_address);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -199,7 +199,7 @@ void setLocalIP(struct EthernetClass *ethernetClass, struct IPAddress * local_ip
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	uint8_t* addr = raw_address(local_ip);
-	w5100ClassSetIPAddress(w5100Class, addr);
+	w5100ClassSetIPAddress(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -207,7 +207,7 @@ void setSubnetMask(struct EthernetClass *ethernetClass, struct IPAddress * subne
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	uint8_t* addr = raw_address(subnet);
-	w5100ClassSetSubnetMask(w5100Class, addr);
+	w5100ClassSetSubnetMask(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -215,7 +215,7 @@ void setGatewayIP(struct EthernetClass *ethernetClass, struct IPAddress * gatewa
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	uint8_t* addr = raw_address(gateway);
-	w5100ClassSetGatewayIp(w5100Class, addr);
+	w5100ClassSetGatewayIp(w5100Clazz, addr);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -225,14 +225,14 @@ void setRetransmissionTimeout(struct EthernetClass *ethernetClass, uint16_t mill
 {
 	if (milliseconds > 6553) milliseconds = 6553;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassSetRetransmissionTime(w5100Class, milliseconds * 10);
+	w5100ClassSetRetransmissionTime(w5100Clazz, milliseconds * 10);
 	spiClassEndTransaction(spiClass);
 }
 
 void setRetransmissionCount(struct EthernetClass *ethernetClass, uint8_t num)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassSetRetransmissionCount(w5100Class, num);
+	w5100ClassSetRetransmissionCount(w5100Clazz, num);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -1271,7 +1271,7 @@ void ethClientFlush(struct EthernetClient * ethernetClient)
 	while (ethernetClient->sockindex < MAX_SOCK_NUM) {
 		uint8_t stat = socketStatus(ethernetClient->sockindex);
 		if (stat != SnSR_ESTABLISHED && stat != SnSR_CLOSE_WAIT) return;
-		if (socketSendAvailable(ethernetClient->sockindex) >= w5100Class->SSIZE) return;
+		if (socketSendAvailable(ethernetClient->sockindex) >= w5100Clazz->SSIZE) return;
 	}
 }
 
@@ -1317,7 +1317,7 @@ uint16_t ethClientLocalPort(struct EthernetClient * ethernetClient)
 	if (ethernetClient->sockindex >= MAX_SOCK_NUM) return 0;
 	uint16_t port;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	port = readSnPORT(w5100Class, ethernetClient->sockindex);
+	port = readSnPORT(w5100Clazz, ethernetClient->sockindex);
 	spiClassEndTransaction(spiClass);
 	return port;
 }
@@ -1332,7 +1332,7 @@ struct IPAddress * ethClientRemoteIP(struct EthernetClient * ethernetClient)
   }
 	uint8_t remoteIParray[4];
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	readSnDIPR(w5100Class, ethernetClient->sockindex, remoteIParray);
+	readSnDIPR(w5100Clazz, ethernetClient->sockindex, remoteIParray);
 	spiClassEndTransaction(spiClass);
 
   octetsIPAddress(ip, remoteIParray[0],remoteIParray[1],remoteIParray[2],remoteIParray[3]);
@@ -1344,7 +1344,7 @@ uint16_t ethClientRemotePort(struct EthernetClient * ethernetClient)
 	if (ethernetClient->sockindex >= MAX_SOCK_NUM) return 0;
 	uint16_t port;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	port = readSnDPORT(w5100Class, ethernetClient->sockindex);
+	port = readSnDPORT(w5100Clazz, ethernetClient->sockindex);
 	spiClassEndTransaction(spiClass);
 	return port;
 }

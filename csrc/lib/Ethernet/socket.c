@@ -47,7 +47,7 @@ uint8_t socketBegin(uint8_t protocol, uint16_t port)
 	uint8_t s, status[MAX_SOCK_NUM], chip, maxindex=MAX_SOCK_NUM;
 
 	// first check hardware compatibility
-	chip = getChip(w5100Class);
+	chip = getChip(w5100Clazz);
 	if (!chip) return MAX_SOCK_NUM; // immediate error if no hardware detected
 #if MAX_SOCK_NUM > 4
 	if (chip == 51) maxindex = 4; // W5100 chip never supports more than 4 sockets
@@ -56,7 +56,7 @@ uint8_t socketBegin(uint8_t protocol, uint16_t port)
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	// look at all the hardware sockets, use any that are closed (unused)
 	for (s=0; s < maxindex; s++) {
-		status[s] = readSnSR(w5100Class, s);
+		status[s] = readSnSR(w5100Clazz, s);
 		if (status[s] == SnSR_CLOSED) goto makesocket;
 	}
 	//Serial.printf("W5000socket step2\n");
@@ -80,27 +80,23 @@ uint8_t socketBegin(uint8_t protocol, uint16_t port)
 	spiClassEndTransaction(spiClass);
 	return MAX_SOCK_NUM; // all sockets are in use
 closemakesocket:
-	//Serial.printf("W5000socket close\n");
-	w5100ClassExecCmdSn(w5100Class, s, Sock_CLOSE);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_CLOSE);
 makesocket:
-	//Serial.printf("W5000socket %d\n", s);
-	//EthernetServer::server_port[s] = 0;
 	delayMicroseconds(250); // TODO: is this needed??
-	writeSnMR(w5100Class, s, protocol);
-	writeSnIR(w5100Class, s, 0xFF);
+	writeSnMR(w5100Clazz, s, protocol);
+	writeSnIR(w5100Clazz, s, 0xFF);
 	if (port > 0) {
-		writeSnPORT(w5100Class, s, port);
+		writeSnPORT(w5100Clazz, s, port);
 	} else {
 		// if don't set the source port, set local_port number.
 		if (++local_port < 49152) local_port = 49152;
-		writeSnPORT(w5100Class, s, local_port);
+		writeSnPORT(w5100Clazz, s, local_port);
 	}
-	w5100ClassExecCmdSn(w5100Class, s, Sock_OPEN);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_OPEN);
 	state[s].RX_RSR = 0;
-	state[s].RX_RD  = readSnRX_RD(w5100Class, s); // always zero?
+	state[s].RX_RD  = readSnRX_RD(w5100Clazz, s); // always zero?
 	state[s].RX_inc = 0;
 	state[s].TX_FSR = 0;
-
 	spiClassEndTransaction(spiClass);
 	return s;
 }
@@ -111,7 +107,7 @@ uint8_t socketBeginMulticast(uint8_t protocol, struct IPAddress * ip, uint16_t p
 	uint8_t s, status[MAX_SOCK_NUM], chip, maxindex=MAX_SOCK_NUM;
 
 	// first check hardware compatibility
-	chip = getChip(w5100Class);
+	chip = getChip(w5100Clazz);
 	if (!chip) return MAX_SOCK_NUM; // immediate error if no hardware detected
 #if MAX_SOCK_NUM > 4
 	if (chip == 51) maxindex = 4; // W5100 chip never supports more than 4 sockets
@@ -120,7 +116,7 @@ uint8_t socketBeginMulticast(uint8_t protocol, struct IPAddress * ip, uint16_t p
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	// look at all the hardware sockets, use any that are closed (unused)
 	for (s=0; s < maxindex; s++) {
-		status[s] = readSnSR(w5100Class, s);
+		status[s] = readSnSR(w5100Clazz, s);
 		if (status[s] == SnSR_CLOSED) goto makesocket;
 	}
 	//Serial.printf("W5000socket step2\n");
@@ -144,20 +140,17 @@ uint8_t socketBeginMulticast(uint8_t protocol, struct IPAddress * ip, uint16_t p
 	spiClassEndTransaction(spiClass);
 	return MAX_SOCK_NUM; // all sockets are in use
 closemakesocket:
-	//Serial.printf("W5000socket close\n");
-	w5100ClassExecCmdSn(w5100Class, s, Sock_CLOSE);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_CLOSE);
 makesocket:
-	//Serial.printf("W5000socket %d\n", s);
-	//EthernetServer::server_port[s] = 0;
 	delayMicroseconds(250); // TODO: is this needed??
-  writeSnMR(w5100Class, s, protocol);
-  writeSnIR(w5100Class, s, 0xFF);
+  writeSnMR(w5100Clazz, s, protocol);
+  writeSnIR(w5100Clazz, s, 0xFF);
 	if (port > 0) {
-		writeSnPORT(w5100Class, s, port);
+		writeSnPORT(w5100Clazz, s, port);
 	} else {
 		// if don't set the source port, set local_port number.
 		if (++local_port < 49152) local_port = 49152;
-		writeSnPORT(w5100Class, s, local_port);
+		writeSnPORT(w5100Clazz, s, local_port);
 	}
 	// Calculate MAC address from Multicast IP Address
     	uint8_t mac[] = {  0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
@@ -169,12 +162,12 @@ makesocket:
       mac[3] = getOctetIPAddress(ip, 1) & 0x7F;
 
       uint8_t* addr = raw_address(ip);
-    	writeSnDIPR(w5100Class, s, addr);   //239.255.0.1
-    	writeSnDPORT(w5100Class, s, port);
-    	writeSnDHAR(w5100Class, s, mac);
-	w5100ClassExecCmdSn(w5100Class, s, Sock_OPEN);
+    	writeSnDIPR(w5100Clazz, s, addr);   //239.255.0.1
+    	writeSnDPORT(w5100Clazz, s, port);
+    	writeSnDHAR(w5100Clazz, s, mac);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_OPEN);
 	state[s].RX_RSR = 0;
-	state[s].RX_RD  = readSnRX_RD(w5100Class, s); // always zero?
+	state[s].RX_RD  = readSnRX_RD(w5100Clazz, s); // always zero?
 	state[s].RX_inc = 0;
 	state[s].TX_FSR = 0;
 	spiClassEndTransaction(spiClass);
@@ -185,7 +178,7 @@ makesocket:
 uint8_t socketStatus(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	uint8_t status = readSnSR(w5100Class, s);
+	uint8_t status = readSnSR(w5100Clazz, s);
 	spiClassEndTransaction(spiClass);
 	return status;
 }
@@ -195,7 +188,7 @@ uint8_t socketStatus(uint8_t s)
 void socketClose(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-  w5100ClassExecCmdSn(w5100Class, s, Sock_CLOSE);
+  w5100ClassExecCmdSn(w5100Clazz, s, Sock_CLOSE);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -203,11 +196,11 @@ void socketClose(uint8_t s)
 uint8_t socketListen(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	if (readSnSR(w5100Class, s) != SnSR_INIT) {
+	if (readSnSR(w5100Clazz, s) != SnSR_INIT) {
 		spiClassEndTransaction(spiClass);
 		return 0;
 	}
-	w5100ClassExecCmdSn(w5100Class, s, Sock_LISTEN);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_LISTEN);
 	spiClassEndTransaction(spiClass);
 	return 1;
 }
@@ -217,9 +210,9 @@ void socketConnect(uint8_t s, uint8_t * addr, uint16_t port)
 {
 	// set destination IP
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	writeSnDIPR(w5100Class, s, addr);
-	writeSnDPORT(w5100Class, s, port);
-	w5100ClassExecCmdSn(w5100Class, s, Sock_CONNECT);
+	writeSnDIPR(w5100Clazz, s, addr);
+	writeSnDPORT(w5100Clazz, s, port);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_CONNECT);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -227,7 +220,7 @@ void socketConnect(uint8_t s, uint8_t * addr, uint16_t port)
 void socketDisconnect(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-  w5100ClassExecCmdSn(w5100Class, s, Sock_DISCON);
+  w5100ClassExecCmdSn(w5100Clazz, s, Sock_DISCON);
 	spiClassEndTransaction(spiClass);
 }
 
@@ -239,9 +232,9 @@ uint16_t getSnRX_RSR(uint8_t s)
 #if 1
         uint16_t val, prev;
 
-        prev = readSnRX_RSR(w5100Class, s);
+        prev = readSnRX_RSR(w5100Clazz, s);
         while (1) {
-                val = readSnRX_RSR(w5100Class, s);
+                val = readSnRX_RSR(w5100Clazz, s);
                 if (val == prev) {
 			return val;
 		}
@@ -260,16 +253,16 @@ void read_data(uint8_t s, uint16_t src, uint8_t *dst, uint16_t len)
 	uint16_t src_ptr;
 
 	//Serial.printf("read_data, len=%d, at:%d\n", len, src);
-	src_mask = (uint16_t)src & w5100Class->SMASK;
-	src_ptr = RBASE(w5100Class, s) + src_mask;
+	src_mask = (uint16_t)src & w5100Clazz->SMASK;
+	src_ptr = RBASE(w5100Clazz, s) + src_mask;
 
-	if (hasOffsetAddressMapping() || src_mask + len <= w5100Class->SSIZE) {
-		readBuffer(w5100Class, src_ptr, dst, len);
+	if (hasOffsetAddressMapping() || src_mask + len <= w5100Clazz->SSIZE) {
+		readBuffer(w5100Clazz, src_ptr, dst, len);
 	} else {
-		size = w5100Class->SSIZE - src_mask;
-		readBuffer(w5100Class, src_ptr, dst, size);
+		size = w5100Clazz->SSIZE - src_mask;
+		readBuffer(w5100Clazz, src_ptr, dst, size);
 		dst += size;
-		readBuffer(w5100Class, RBASE(w5100Class, s), dst, len - size);
+		readBuffer(w5100Clazz, RBASE(w5100Clazz, s), dst, len - size);
 	}
 }
 
@@ -287,7 +280,7 @@ int socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 	}
 	if (ret == 0) {
 		// No data available.
-		uint8_t status = readSnSR(w5100Class, s);
+		uint8_t status = readSnSR(w5100Clazz, s);
 		if ( status == SnSR_LISTEN || status == SnSR_CLOSED ||
 		  status == SnSR_CLOSE_WAIT ) {
 			// The remote end has closed its side of the connection,
@@ -307,8 +300,8 @@ int socketRecv(uint8_t s, uint8_t *buf, int16_t len)
 		uint16_t inc = state[s].RX_inc + ret;
 		if (inc >= 250 || state[s].RX_RSR == 0) {
 			state[s].RX_inc = 0;
-		  writeSnRX_RD(w5100Class, s, ptr);
-			w5100ClassExecCmdSn(w5100Class, s, Sock_RECV);
+		  writeSnRX_RD(w5100Clazz, s, ptr);
+			w5100ClassExecCmdSn(w5100Clazz, s, Sock_RECV);
 		} else {
 			state[s].RX_inc = inc;
 		}
@@ -336,7 +329,7 @@ uint8_t socketPeek(uint8_t s)
 	uint8_t b;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	uint16_t ptr = state[s].RX_RD;
-	readBuffer(w5100Class, (ptr & w5100Class->SMASK) + RBASE(w5100Class, s), &b, 1);
+	readBuffer(w5100Clazz, (ptr & w5100Clazz->SMASK) + RBASE(w5100Clazz, s), &b, 1);
 	spiClassEndTransaction(spiClass);
 	return b;
 }
@@ -349,9 +342,9 @@ uint16_t getSnTX_FSR(uint8_t s)
 {
         uint16_t val, prev;
 
-        prev = readSnTX_FSR(w5100Class, s);
+        prev = readSnTX_FSR(w5100Clazz, s);
         while (1) {
-                val = readSnTX_FSR(w5100Class, s);
+                val = readSnTX_FSR(w5100Clazz, s);
                 if (val == prev) {
 			state[s].TX_FSR = val;
 			return val;
@@ -362,21 +355,21 @@ uint16_t getSnTX_FSR(uint8_t s)
 
 void write_data(uint8_t s, uint16_t data_offset, const uint8_t *data, uint16_t len)
 {
-	uint16_t ptr = readSnTX_WR(w5100Class, s);
+	uint16_t ptr = readSnTX_WR(w5100Clazz, s);
 	ptr += data_offset;
-	uint16_t offset = ptr & w5100Class->SMASK;
-	uint16_t dstAddr = offset + SBASE(w5100Class, s);
+	uint16_t offset = ptr & w5100Clazz->SMASK;
+	uint16_t dstAddr = offset + SBASE(w5100Clazz, s);
 
-	if (hasOffsetAddressMapping() || offset + len <= w5100Class->SSIZE) {
-		writeBuffer(w5100Class, dstAddr, data, len);
+	if (hasOffsetAddressMapping() || offset + len <= w5100Clazz->SSIZE) {
+		writeBuffer(w5100Clazz, dstAddr, data, len);
 	} else {
 		// Wrap around circular buffer
-		uint16_t size = w5100Class->SSIZE - offset;
-		writeBuffer(w5100Class, dstAddr, data, size);
-		writeBuffer(w5100Class, SBASE(w5100Class, s), data + size, len - size);
+		uint16_t size = w5100Clazz->SSIZE - offset;
+		writeBuffer(w5100Clazz, dstAddr, data, size);
+		writeBuffer(w5100Clazz, SBASE(w5100Clazz, s), data + size, len - size);
 	}
 	ptr += len;
-	writeSnTX_WR(w5100Class, s, ptr);
+	writeSnTX_WR(w5100Clazz, s, ptr);
 }
 
 /**
@@ -389,8 +382,8 @@ uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len)
 	uint16_t ret=0;
 	uint16_t freesize=0;
 
-	if (len > w5100Class->SSIZE) {
-		ret = w5100Class->SSIZE; // check size not to exceed MAX size.
+	if (len > w5100Clazz->SSIZE) {
+		ret = w5100Clazz->SSIZE; // check size not to exceed MAX size.
 	} else {
 		ret = len;
 	}
@@ -398,7 +391,7 @@ uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len)
 	do {
 		spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 		freesize = getSnTX_FSR(s);
-		status = readSnSR(w5100Class, s);
+		status = readSnSR(w5100Clazz, s);
 		spiClassEndTransaction(spiClass);
 		if ((status != SnSR_ESTABLISHED) && (status != SnSR_CLOSE_WAIT)) {
 			ret = 0;
@@ -410,10 +403,10 @@ uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len)
 	// copy data
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	write_data(s, 0, (uint8_t *)buf, ret);
-	w5100ClassExecCmdSn(w5100Class, s, Sock_SEND);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_SEND);
 
-	while ((readSnIR(w5100Class, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
-		if (readSnSR(w5100Class, s) == SnSR_CLOSED ) {
+	while ((readSnIR(w5100Clazz, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
+		if (readSnSR(w5100Clazz, s) == SnSR_CLOSED ) {
 			spiClassEndTransaction(spiClass);
 			return 0;
 		}
@@ -422,7 +415,7 @@ uint16_t socketSend(uint8_t s, const uint8_t * buf, uint16_t len)
 		spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	}
 
-	writeSnIR(w5100Class, s, SnIR_SEND_OK);
+	writeSnIR(w5100Clazz, s, SnIR_SEND_OK);
 	spiClassEndTransaction(spiClass);
 	return ret;
 }
@@ -433,7 +426,7 @@ uint16_t socketSendAvailable(uint8_t s)
 	uint16_t freesize=0;
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	freesize = getSnTX_FSR(s);
-	status = readSnSR(w5100Class, s);
+	status = readSnSR(w5100Clazz, s);
 	spiClassEndTransaction(spiClass);
 	if ((status == SnSR_ESTABLISHED) || (status == SnSR_CLOSE_WAIT)) {
 		return freesize;
@@ -463,8 +456,8 @@ bool socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port)
 		return false;
 	}
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	writeSnDIPR(w5100Class, s, addr);
-	writeSnDPORT(w5100Class, s, port);
+	writeSnDIPR(w5100Clazz, s, addr);
+	writeSnDPORT(w5100Clazz, s, port);
 	spiClassEndTransaction(spiClass);
 	return true;
 }
@@ -472,11 +465,11 @@ bool socketStartUDP(uint8_t s, uint8_t* addr, uint16_t port)
 bool socketSendUDP(uint8_t s)
 {
 	spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
-	w5100ClassExecCmdSn(w5100Class, s, Sock_SEND);
+	w5100ClassExecCmdSn(w5100Clazz, s, Sock_SEND);
 
-	while ( (readSnIR(w5100Class, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
-		if (readSnIR(w5100Class, s) & SnIR_TIMEOUT) {
-			writeSnIR(w5100Class, s, (SnIR_SEND_OK|SnIR_TIMEOUT));
+	while ( (readSnIR(w5100Clazz, s) & SnIR_SEND_OK) != SnIR_SEND_OK ) {
+		if (readSnIR(w5100Clazz, s) & SnIR_TIMEOUT) {
+			writeSnIR(w5100Clazz, s, (SnIR_SEND_OK|SnIR_TIMEOUT));
 			spiClassEndTransaction(spiClass);
 			return false;
 		}
@@ -485,7 +478,7 @@ bool socketSendUDP(uint8_t s)
 		spiClassBeginTransactionNoPin(spiClass, SPI_ETHERNET_SETTINGS);
 	}
 
-	writeSnIR(w5100Class, s, SnIR_SEND_OK);
+	writeSnIR(w5100Clazz, s, SnIR_SEND_OK);
 	spiClassEndTransaction(spiClass);
 
 	/* Sent ok */

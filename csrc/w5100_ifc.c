@@ -2,15 +2,18 @@
 #include "lib/Ethernet/Ethernet.h"
 #include "lib/libraries/random.h"
 
-uint8_t *mac;
-unsigned long timeout;
-unsigned long responseTimeout;
+#undef printf
+#define printf(...) vbl_printf_stdout(__VA_ARGS__)
+//#define printf(...)
+
+unsigned long timeout = 5;
+unsigned long responseTimeout = 30;
+
 struct IPAddress * dnsIP;
 
+#define macAddress MAC
 #define SOCK_NUM 0
 #define SOCK_OK  1
-
-begin(ethernetClass, mac, timeout, responseTimeout);
 
 typedef struct wiz_NetInfo_t
 {
@@ -24,21 +27,20 @@ wiz_NetInfo* getWIZNETINFO;
 
 C_NATIVE(_w5100_init)
 {
-    NATIVE_UNWARN();
-    #if defined(_SPI_H_INCLUDED)
-      spiSettingsConstructor(spiSettings);
-    #else
-
-    #endif
-    spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
-    int ret = begin(ethernetClass, mac, timeout, responseTimeout);
-    return ret;
+    //NATIVE_UNWARN();
+    //printf("HERE %s \n", "__HERE");
+    *res = MAKE_NONE();
+    return ERR_OK;
+    //spiSettingsConstructor(spiSettings);
+    //spiClassConstructor(spiClass, SPI_INTERFACE, SPI_INTERFACE_ID);
+    //int ret = begin(ethernetClass, (uint8_t *) macAddress, timeout, responseTimeout);
+    //return ret;
 }
 
 C_NATIVE(w5100_eth_link)
 {
     NATIVE_UNWARN();
-    beginIP(ethernetClass, mac, dnsIP);
+    beginIP(ethernetClass, (uint8_t *) macAddress, dnsIP);
     return SOCK_OK;
 }
 
@@ -66,10 +68,10 @@ C_NATIVE(w5100_net_link_info)
 {
     NATIVE_UNWARN();
 
-    w5100ClassGetMACAddress(w5100Class, getWIZNETINFO->mac);
-    w5100ClassGetIPAddress(w5100Class, getWIZNETINFO->ip);
-    w5100ClassGetSubnetMask(w5100Class, getWIZNETINFO->sn);
-    w5100ClassGetGatewayIp(w5100Class, getWIZNETINFO->gw);
+    w5100ClassGetMACAddress(w5100Clazz, getWIZNETINFO->mac);
+    w5100ClassGetIPAddress(w5100Clazz, getWIZNETINFO->ip);
+    w5100ClassGetSubnetMask(w5100Clazz, getWIZNETINFO->sn);
+    w5100ClassGetGatewayIp(w5100Clazz, getWIZNETINFO->gw);
 
     *res = getWIZNETINFO;
     return SOCK_OK;
